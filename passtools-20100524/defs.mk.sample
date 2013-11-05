@@ -1,0 +1,81 @@
+# Copy this file to defs.mk and edit as needed.
+
+# DESTDIR is the chroot tree to install into (default none) and
+# PREFIX is the install prefix. Things are installed in $(PREFIX)/bin and
+# so forth.
+#
+# Certain programs that need to be installed on the root volume if
+# using lasagna for system volumes are installed under $(ROOTPREFIX)
+# instead of $(PREFIX). Generally if $(PREFIX) is /usr, ROOTPREFIX
+# should be empty, so $(ROOTPREFIX)/sbin becomes /sbin. Otherwise,
+# ROOTPREFIX should be set the same as $(PREFIX).
+#
+# MOUNTSBINDIR is where the lasagna mount scripts go. This *must* be
+# /sbin, regardless of $(PREFIX) or $(ROOTPREFIX), for Linux's mount
+# to find and use them. You can set MOUNTSBINDIR to something else
+# (e.g. for installing into an unprivileged tree or whatever) but then
+# you'll need symlinks in /sbin for things to work. If you aren't
+# using lasagna (e.g. installing just to use the database tools, or
+# not on Linux) then you can set MOUNTSBINDIR to $(PREFIX)/sbin for
+# tidiness.
+
+DESTDIR=
+PREFIX=/usr/local
+ROOTPREFIX=$(PREFIX)
+MOUNTSBINDIR=/sbin
+
+CC=gcc
+CXX=g++
+LD=ld
+AR=ar
+RANLIB=true
+OBJCOPY=objcopy
+
+DEBUG=-g
+#DEBUG=-O2
+#DEBUG=-O3 -fomit-frame-pointer
+
+# AnaGram parser generator.
+AGCL=agcl
+#AGCL=false # if you don't have it installed
+
+# Berkeley DB. Required definitions are
+#
+#   BDB_INCDIR		(pruned from depend.mk)
+#   BDB_CFLAGS		(given to compiler)
+#   BDB_LIBS		(given to linker)
+#
+# BDB_INCDIR should be the path that appears in an -I directive in
+# BDB_CFLAGS, if any. If not, set it to /nonexistent. Don't leave it
+# empty, or depend.mk files get mangled.
+#
+# Note that Linux appears to require that -lpthread appear in BDB_LIBS.
+#
+
+# Generic
+BDB_INCDIR=  /nonexistent
+BDB_CFLAGS=
+BDB_LIBS=    -ldb
+
+# If you have db installed in /usr/local
+#BDB_INCDIR= /usr/local/BerkeleyDB.4.3/include
+#BDB_CFLAGS= -I$(BDB_INCDIR)
+#BDB_LIBS=   /usr/local/BerkeleyDB.4.3/lib/libdb.a
+
+# For RHEL/CentOS/Scientific Linux
+#BDB_INCDIR= /nonexistent
+#BDB_CFLAGS=
+#BDB_LIBS=   -ldb -lpthread
+
+# For NetBSD using db from pkgsrc
+#BDB_INCDIR= /usr/pkg/include/db4
+#BDB_CFLAGS= -I$(BDB_INCDIR)
+#BDB_LIBS=   /usr/pkg/lib/libdb4.so -R/usr/pkg/lib
+
+# Uri's weird machine
+#BDB_DIR=    /local/db-4.5.20.NC/build_unix
+#BDB_INCDIR= $(BDB_DIR)
+#BDB_CFLAGS= -I$(BDB_INCDIR)
+#BDB_LIBDIR= $(BDB_DIR)
+#BDB_LIBS=   $(BDB_LIBDIR)/libdb.a -lpthread
+

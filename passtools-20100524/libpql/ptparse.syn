@@ -1,0 +1,945 @@
+{
+/*
+ * Copyright 2008, 2009
+ *	The President and Fellows of Harvard College.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE UNIVERSITY AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE UNIVERSITY OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+#include <string.h>
+#include <stdlib.h>  // for strtod
+#include <limits.h>  // for INT_MAX
+#include <errno.h>   // for strtod
+
+#include "pqlvalue.h"
+#include "pttree.h"
+#include "ptprivate.h"
+#include "pqlcontext.h"
+#include "pql.h"
+
+
+/* type of input tokens */
+struct tokstr {
+   const char *str;
+   size_t len;
+};
+
+}
+
+[
+  parser name = "ptparse"
+  parser file name = "#.c"
+  header file name = "ptpcb.h"
+  line numbers
+  allow macros
+  //inline functions
+  lines and columns
+  event driven
+  auto resynch
+  input values
+  default input type = struct tokstr
+  reentrant parser
+  extend pcb {
+     struct pqlcontext *pql;
+     struct ptexpr *result;
+     bool failed;
+  }
+
+
+  // this must match ptlex.c
+  enum {
+    eof,
+    AT,		/* punctuation */
+    COLON,
+    COMMA,
+    DOT,
+    EQ,
+    GT,
+    GTEQ,
+    HASH,
+    LBRACE,
+    LBRACKBRACK,
+    LPAREN,
+    LT,
+    LTEQ,
+    LTGT,
+    MINUS,
+    PIPE,
+    PLUS,
+    PLUSPLUS,
+    QUES,
+    RBRACE,
+    RBRACKBRACK,
+    RPAREN,
+    SEMIC,
+    SLASH,
+    STAR,
+    ABS,	/* keywords */
+    ALL,
+    AND,
+    ANY,
+    AS,
+    AVG,
+    BY,
+    COUNT,
+    DISTINCT,
+    ELEMENT,
+    EXCEPT,
+    EXISTS,
+    FALSE,
+    FOR,
+    FROM,
+    GLOB,
+    GREP,
+    GROUP,
+    HAVING,
+    IN,
+    INTERSECT,
+    LIKE,
+    MAX,
+    MIN,
+    MOD,
+    NEW,
+    NIL,
+    NOT,
+    OF,
+    OR,
+    PATHOF,
+    SELECT,
+    SET,
+    SOME,
+    SOUNDEX,
+    SUM,
+    TRUE,
+    UNGROUP,
+    UNION,
+    UNQUOTE,
+    WHERE,
+    WITH,
+    IDENTIFIER,			/* basic token types */
+    INTEGER_LITERAL,
+    QUOTED_STRING_LITERAL,
+    REAL_LITERAL,
+    FUNCNAME			/* function name */
+  }
+]
+
+(void) complete query $
+  -> query:e, SEMIC?, eof = PCB.result = e;
+
+(struct ptexpr *) query
+  -> nonsfw query:e = e;
+  -> sfw query:e = e;
+
+////////////////////////////////////////
+
+(struct ptexpr *) sfw query
+  -> SELECT, distinct:d, selection list:s, sfw body:b =
+        MKEXPR(select, b, MKEXPR(tuple, s), d);
+
+(struct ptexpr *) sfw body
+  -> from list:f = MKEXPR(from, f);
+  -> sfw body:b, WHERE, quantified expression:e = MKEXPR(where, b, e);
+  -> sfw body:b, HAVING, quantified expression:e = MKEXPR(where, b, e);
+  -> sfw body:b, GROUP, BY, columnvar list:l = MKEXPR(group, b, l, NULL);
+  -> sfw body:b, GROUP, BY, columnvar list:l,
+                 WITH, columnvar:v = MKEXPR(group, b, l, v);
+  -> sfw body:b, UNGROUP, columnvar:v = MKEXPR(ungroup, b, v);
+
+(struct ptcolumnvararray *) columnvar list
+  -> columnvar:v                          = START(columnvar, v);
+  -> columnvar list:l, COMMA, columnvar:v = ADD(columnvar, l, v);
+
+(bool) distinct
+  ->          = false;
+  -> DISTINCT = true;
+
+(struct ptexprarray *) selection list
+  -> selection:e                          = START(expr, e);
+  -> selection list:l, COMMA, selection:e = ADD(expr, l, e);
+
+(struct ptexpr *) selection
+  -> nonsfw query:e                      = e;
+  -> nonsfw query:e, AS, IDENTIFIER:x    = MKEXPR(rename_static, x.str, x.len, e);
+  -> nonsfw query:e, AS, unquote:p       = MKEXPR(rename_computed, p, e);
+  -> IDENTIFIER:x, COLON, nonsfw query:e = MKEXPR(rename_static, x.str, x.len, e);
+  -> unquote:p, COLON, nonsfw query:e    = MKEXPR(rename_computed, p, e);
+
+(struct ptexprarray *) from list
+  ->                        = EMPTY(expr);
+  -> FROM, from item list:l = l;
+
+(struct ptexprarray *) from item list
+  -> from item:e                          = START(expr, e);
+  -> from item list:l, COMMA, from item:e = ADD(expr, l, e);
+
+(struct ptexpr *) from item
+  -> path:e                   = e;
+  -> path:e, AS?, columnvar:v = bind_tail_of_path(&PCB, e, v), e;
+  -> columnvar:v, IN, path:e  = bind_tail_of_path(&PCB, e, v), e;
+  -> nested sfw:e, AS?, columnvar:v = MKEXPR(assign, v, e, NULL);
+  -> columnvar:v, IN, nested sfw:e  = MKEXPR(assign, v, e, NULL);
+
+(struct ptexpr *) nested sfw
+  -> LPAREN, sfw query:e, RPAREN = e;
+
+////////////////////////////////////////
+
+(struct ptexpr *) nonsfw query
+  -> quantified expression:e = e;
+
+/* these only have boolean value */
+(struct ptexpr *) quantified expression
+  -> logical expression:e = e;
+  -> EXISTS, columnvar:v, IN, quantified expression:e, COLON,
+     quantified expression:p = MKEXPR(exists, v, e, p);
+  -> FOR, ALL, columnvar:v, IN, quantified expression:e, COLON,
+     quantified expression:p = MKEXPR(forall, v, e, p);
+
+(struct ptexpr *) logical expression
+  -> element expression:e = e;
+  -> logical expression:l, logical op:op, element expression:r =
+	MKEXPR(bop, l, op, r);
+
+(enum functions) logical op
+  -> AND = F_AND;
+  -> OR  = F_OR;
+
+(struct ptexpr *) element expression
+  -> set expression:e = e;
+  -> element expression:l, IN, set expression:r =
+	MKEXPR(bop, l, F_IN, r);
+
+(struct ptexpr *) set expression
+ -> comparison expression:e = e;
+ -> set expression:l, set op:op, comparison expression:r =
+	MKEXPR(bop, l, op, r);
+
+(enum functions) set op
+  -> INTERSECT = F_INTERSECT;
+  -> UNION     = F_UNION;
+  -> EXCEPT    = F_EXCEPT;
+  -> INTERSECT, ALL = F_INTERSECTALL;
+  -> UNION, ALL     = F_UNIONALL;
+  -> EXCEPT, ALL    = F_EXCEPTALL;
+
+(struct ptexpr *) comparison expression
+  -> path or term:e = e;
+  -> comparison expression:l, comparison op:op, path or term:r =
+	MKEXPR(bop, l, op, r);
+  -> comparison expression:l,
+     comparison op:op, SOME+ANY,
+     path or term:r =
+	do_exists_bop(PCB.pql, l, op, r);
+  -> comparison expression:l,
+     comparison op:op, ALL,
+     path or term:r =
+	do_forall_bop(PCB.pql, l, op, r);
+
+(enum functions) comparison op
+  -> EQ   = F_EQ;
+  -> LTGT = F_NOTEQ;
+  -> LT   = F_LT;
+  -> LTEQ = F_LTEQ;
+  -> GTEQ = F_GTEQ;
+  -> GT   = F_GT;
+  -> LIKE = F_LIKE;
+  -> GLOB = F_GLOB;
+  -> GREP = F_GREP;
+  -> SOUNDEX = F_SOUNDEX;
+
+(struct ptexpr *) path or term
+  -> path:e = e;
+  -> term:e = e;
+
+(struct ptexpr *) term
+  -> factor:e = e;
+  -> term:l, add op:op, factor:r =
+	MKEXPR(bop, l, op, r);
+
+(enum functions) add op
+  -> PLUS  = F_ADD;
+  -> MINUS = F_SUB;
+  -> PLUSPLUS = F_CONCAT;
+
+(struct ptexpr *) factor
+  -> prefix expression:e =e;
+  -> factor:l, mul op:op, prefix expression:r =
+	MKEXPR(bop, l, op, r);
+
+(enum functions) mul op
+  -> STAR  = F_MUL;
+  -> SLASH = F_DIV;
+  -> MOD   = F_MOD;
+
+(struct ptexpr *) prefix expression
+  -> suffix expression:e = e;
+  -> STAR, prefix expression:e  = e;
+  -> MINUS, prefix expression:e = MKEXPR(uop, F_NEG, e);
+  -> NOT, prefix expression:e   = MKEXPR(uop, F_NOT, e);
+
+(struct ptexpr *) suffix expression
+  -> base expression:e = e;
+
+(struct ptexpr *) base expression
+  -> PATHOF, LPAREN, anyvar:p, RPAREN   = MKEXPR(uop, F_TOSTRING, p);
+  -> func:op, LPAREN, query:e, RPAREN   = MKEXPR(uop, op, e);
+  -> function name:f,
+     LPAREN, query list:l, RPAREN       = MKEXPR(func, f, l);
+  -> function name:f,
+     LPAREN, RPAREN                     = MKEXPR(func, f, NULL);
+  -> NEW,
+     LPAREN, selection list:l, RPAREN   = MKEXPR(uop, F_NEW, MKEXPR(tuple, l));
+  -> constant:e                         = e;
+  -> anyvar:e                           = e;
+  -> LPAREN, query:e, RPAREN            = e;
+
+(enum functions) func
+  -> MIN     = F_MIN;
+  -> MAX     = F_MAX;
+  -> COUNT   = F_COUNT;
+  -> SUM     = F_SUM;
+  -> AVG     = F_AVG;
+  -> ABS     = F_ABS;
+  -> EXISTS  = F_NONEMPTY;
+  -> ELEMENT = F_GETELEMENT;
+  -> SET     = F_MAKESET;
+
+(enum functions) function name
+  -> FUNCNAME:s = function_getbyname(s.str, s.len);
+
+(struct ptexprarray *) query list
+  -> nonsfw query:e                      = START(expr, e);
+  -> query list:l, COMMA, nonsfw query:e = ADD(expr, l, e);
+
+(struct ptexpr *) constant
+  -> NIL                   = MKEXPR(value, pqlvalue_nil(PCB.pql));
+  -> INTEGER_LITERAL:x     = MKEXPR(value, getint(PCB.pql, x.str, x.len));
+  -> REAL_LITERAL:x        = MKEXPR(value, getdouble(PCB.pql, x.str, x.len));
+  -> QUOTED_STRING_LITERAL:x = MKEXPR(value, getstring(PCB.pql, x.str, x.len));
+  -> TRUE                  = MKEXPR(value, pqlvalue_bool(PCB.pql, true));
+  -> FALSE                 = MKEXPR(value, pqlvalue_bool(PCB.pql, false));
+
+////////////////////////////////////////
+
+(struct ptexpr *) path
+  -> top sequential path:e = e;
+
+//top sequential path
+//  -> var, alternative path
+//  -> top sequential path, alternative path
+
+(struct ptexpr *) top sequential path
+  -> anyvar:v, sequential path:p = MKEXPR(path, v, p);
+
+(struct ptpath *) sequential path
+  -> alternative path:p                    = p; //pathseq_start(PCB.pql, p);
+  -> sequential path:l, alternative path:p = pathseq_add(PCB.pql, l, p);
+
+(struct ptpath *) alternative path
+  -> varbinding path:p                       = p; //pathalt_start(PCB.pql, p);
+  -> alternative path:l, PIPE, varbinding path:p = pathalt_add(PCB.pql, l, p);
+
+(struct ptpath *) varbinding path
+  -> pathbinding path:p                             = p;
+  -> pathbinding path:p, LBRACE, columnvar:v, RBRACE= path_bindobj(&PCB,p,v),p;
+
+(struct ptpath *) pathbinding path
+  -> repetition path:p                         = p;
+  -> repetition path:p, AT, columnvar:v        = path_bindpath(&PCB, p, v), p;
+
+(struct ptpath *) repetition path
+  -> base path:p       = p; // MKPATH(repetition, p, false, false);
+  -> base path:p, STAR = MKPATH(optional, MKPATH(repeated, p));
+  -> base path:p, PLUS = MKPATH(repeated, p);
+  -> base path:p, QUES = MKPATH(optional, p);
+
+(struct ptpath *) base path
+  -> DOT, label:p = p;
+  -> LPAREN, sequential path:p, RPAREN = p->parens = true, p;
+
+(struct ptpath *) label
+  -> HASH = { return MKPATH(optional,
+			    MKPATH(repeated,
+				   MKPATH(staticedge, "%", 1, false/*rev*/)));
+            }
+  -> IDENTIFIER:x            = MKPATH(staticedge, x.str, x.len, false/*rev*/);
+  -> IDENTIFIER:x, MINUS, OF = MKPATH(staticedge, x.str, x.len, true/*rev*/);
+  -> unquote:e =               MKPATH(computededge, e, false/*rev*/);
+
+(struct ptexpr *) unquote
+  -> UNQUOTE, LPAREN, query:e, RPAREN = e;
+  -> LBRACKBRACK, query:e, RBRACKBRACK = e;
+
+//
+// Note that %'s are allowed in identifiers in labels, and technically not
+// elsewhere.
+//
+
+////////////////////////////////////////
+
+(struct ptexpr *) anyvar
+  -> IDENTIFIER:x = MKEXPR(readanyvar, PCB.line, PCB.column, x.str, x.len);
+
+(struct ptcolumnvar *) columnvar
+  -> IDENTIFIER:x = mkptcolumnvar(PCB.pql, PCB.line, PCB.column, x.str, x.len);
+
+////////////////////////////////////////////////////////////
+// support code
+{
+
+#define SYNTAX_ERROR          noparse(PCB.pql, (PCB).error_message)
+#define PARSER_STACK_OVERFLOW noparse(PCB.pql, "Parser stack overflow")
+#define REDUCTION_TOKEN_ERROR noparse(PCB.pql, "Reduction token error")
+
+static void noparse(struct pqlcontext *pql, const char *msg) {
+   complain(pql, pql->pcb->line, pql->pcb->column, "%s", msg);
+   pql->pcb->failed = true;
+}
+
+void parser_begin(struct pqlcontext *pql) {
+   PQLASSERT(pql->pcb == NULL);
+
+   pql->pcb = domalloc(pql, sizeof(*pql->pcb));
+   init_ptparse(pql->pcb);
+   pql->pcb->pql = pql;
+   pql->pcb->result = NULL;
+   pql->pcb->failed = false;
+}
+
+void parser_send(struct pqlcontext *pql,
+		 unsigned line, unsigned col,
+		 int code, const char *value, size_t valuelen) {
+   pql->pcb->input_code = code;
+   pql->pcb->input_value.str = value;
+   pql->pcb->input_value.len = valuelen;
+   pql->pcb->line = line;
+   pql->pcb->column = col;
+   ptparse(pql->pcb);
+}
+
+void parser_fail(struct pqlcontext *pql) {
+   pql->pcb->failed = true;
+}
+
+/*
+ * This does not issue the eof token; that's passed to parser_send().
+ */
+struct ptexpr *parser_end(struct pqlcontext *pql) {
+   struct ptexpr *ret;
+
+   PQLASSERT(pql->pcb != NULL);
+
+   if (pql->pcb->exit_flag != AG_SUCCESS_CODE) {
+      pql->pcb->failed = true;
+   }
+   if (pql->pcb->failed) {
+      ptmanager_destroyall(pql->ptm);
+      ret = NULL;
+   }
+   else {
+      ret = pql->pcb->result;
+   }
+   dofree(pql, pql->pcb, sizeof(*pql->pcb));
+   pql->pcb = NULL;
+   return ret;
+}
+
+////////////////////////////////////////////////////////////
+
+static int getdigit(int ch, int base, unsigned *ret) {
+   if (ch >= '0' && ch <= '9') {
+      ch = ch - '0';
+   }
+   else if (ch >= 'A' && ch <= 'Z') {
+      ch = ch + 10 - 'A';
+   }
+   else if (ch >= 'a' && ch <= 'z') {
+      ch = ch + 10 - 'a';
+   }
+   else {
+      return -1;
+   }
+   if (ch >= base) {
+      return -1;         
+   }
+   *ret = ch;
+   return 0;
+}
+
+static struct pqlvalue *getint(struct pqlcontext *pql,
+			       const char *str, size_t len) {
+   unsigned base, val, nextval, digit;
+   size_t pos;
+
+   pos = 0;
+
+   if (len > 2 && str[0] == '0' && (str[1] == 'x' || str[1] == 'X')) {
+      pos += 2;
+      base = 16;
+   }
+   else if (str[0] == '0') {
+      base = 8;
+   }
+   else {
+      base = 10;
+   }
+
+   val = 0;
+   while (pos < len) {
+      if (getdigit(str[pos++], base, &digit)) {
+         complain(pql, pql->pcb->line, pql->pcb->column,
+		  "Invalid number");
+         pql->pcb->failed = true;
+         break;
+      }
+      nextval = val * base + digit;
+      if (nextval < val || nextval > INT_MAX) {
+         complain(pql, pql->pcb->line, pql->pcb->column,
+		  "Number too large");
+         pql->pcb->failed = true;
+         break;
+      }
+      val = nextval;
+   }
+
+   return pqlvalue_int(pql, (int)val);
+}
+
+static struct pqlvalue *getdouble(struct pqlcontext *pql,
+			          const char *str, size_t len) {
+   char *tmp, *ep;
+   double val;
+
+   /*
+    * Sigh. But what choice is there?
+    */
+
+   tmp = domalloc(pql, len+1);
+   memcpy(tmp, str, len);
+   tmp[len] = 0;
+
+   errno = 0;
+   val = strtod(tmp, &ep);
+   if (errno != 0 || *ep != 0) {
+      complain(pql, pql->pcb->line, pql->pcb->column,
+	       "Invalid floating point constant");
+      pql->pcb->failed = true;
+   }
+   dofree(pql, tmp, len+1);
+
+   return pqlvalue_float(pql, val);
+}
+
+static struct pqlvalue *getstring(struct pqlcontext *pql,
+			          const char *str, size_t len) {
+   struct pqlvalue *ret;
+   char *result;
+   size_t pos, rpos;
+   unsigned ct, val, nextval, digit;
+   bool complained = false;
+
+   PQLASSERT(str[0] == '"');
+   if (len < 2 || str[len-1] != '"') {
+      /* already reported as an error; we will fail, so cut a corner */
+      return pqlvalue_string(pql, "<ERROR>");
+   }
+
+   /* skip opening quote */
+   str++;
+   len--;
+
+   /* skip closing quote */
+   len--;
+
+   result = domalloc(pql, len+1);
+   pos = rpos = 0;
+   while (pos < len) {
+      if (str[pos] == '\\') {
+         pos++;
+         /* note: cannot have run past len */
+         switch (str[pos]) {
+	    case '\\': pos++; result[rpos++] = '\\'; break;
+	    case '"': pos++; result[rpos++] = '"'; break;
+	    case 'a': pos++; result[rpos++] = '\a'; break;
+	    case 'b': pos++; result[rpos++] = '\b'; break;
+	    case 't': pos++; result[rpos++] = '\t'; break;
+	    case 'n': pos++; result[rpos++] = '\n'; break;
+	    case 'v': pos++; result[rpos++] = '\v'; break;
+	    case 'f': pos++; result[rpos++] = '\f'; break;
+	    case 'r': pos++; result[rpos++] = '\r'; break;
+            case 'x':
+	      pos++;
+	      ct = 0;
+              val = 0;
+              while (getdigit(str[pos], 16, &digit) == 0) {
+		 /* Because we have a quote at the end this won't run off */
+		 pos++;
+		 nextval = val*16 + digit;
+		 if (nextval < val) {
+		    if (!complained) {
+		       complain(pql, pql->pcb->line, pql->pcb->column,
+				"Integer overflow in escape sequence");
+		       pql->pcb->failed = 1;
+		       complained = true;
+		    }
+		    break;
+		 }
+		 ct++;
+		 val = nextval;
+	      }
+	      if (ct == 0) {
+		 goto invalid;
+	      }
+	      result[rpos++] = val;
+	      break;
+	    default:
+	      if (getdigit(str[pos], 8, &digit) == 0) {
+		 pos++;
+		 val = digit;
+		 /* Because we have a quote at the end this won't run off */
+		 if (getdigit(str[pos], 8, &digit) == 0) {
+		    pos++;
+		    val = val*8 + digit;
+		 }
+		 if (getdigit(str[pos], 8, &digit) == 0) {
+		    pos++;
+		    val = val*8 + digit;
+		 }
+		 result[rpos++] = val;
+		 break;
+	      }
+            invalid:
+	      if (!complained) {
+		 complain(pql, pql->pcb->line, pql->pcb->column,
+			  "Invalid escape sequence");
+		 pql->pcb->failed = 1;
+		 complained = true;
+	      }
+	      pos++;
+	      break;
+         }
+      }
+      else {
+         result[rpos++] = str[pos++];
+      }
+   }
+   result[rpos] = 0;
+
+   if (rpos == len) {
+      return pqlvalue_string_consume(pql, result);
+   }
+   else {
+      PQLASSERT(rpos < len);
+      /* string in value must have its real length for memory accounting */
+      ret = pqlvalue_string(pql, result);
+      dofree(pql, result, len+1);
+      return ret;
+   }
+}
+
+////////////////////////////////////////////////////////////
+
+#define EMPTY(type)            pt##type##list_empty(PCB.pql)
+#define START(type, elem)      pt##type##list_start(PCB.pql, elem)
+#define ADD(type, list, elem)  (pt##type##list_add(PCB.pql, list, elem), list)
+
+#define MKPATH(subtype, ...) mkptpath_##subtype(PCB.pql, __VA_ARGS__)
+#define MKEXPR(subtype, ...) mkptexpr_##subtype(PCB.pql, __VA_ARGS__)
+
+static struct ptexprarray *ptexprlist_empty(struct pqlcontext *pql) {
+   struct ptexprarray *arr;
+
+   arr = ptexprarray_create(pql);
+   ptmanager_add_exprarray(pql->ptm, arr);
+   return arr;
+}
+
+static struct ptexprarray *ptexprlist_start(struct pqlcontext *pql,
+					    struct ptexpr *e) {
+   struct ptexprarray *arr;
+
+   arr = ptexprarray_create(pql);
+   ptmanager_add_exprarray(pql->ptm, arr);
+   ptexprarray_add(pql, arr, e, NULL);
+   return arr;
+}
+
+static void ptexprlist_add(struct pqlcontext *pql,
+			   struct ptexprarray *arr,
+			   struct ptexpr *e) {
+   (void)pql;
+   ptexprarray_add(pql, arr, e, NULL);
+}
+
+static struct ptcolumnvararray *ptcolumnvarlist_start(struct pqlcontext *pql,
+						      struct ptcolumnvar *v) {
+   struct ptcolumnvararray *arr;
+
+   arr = ptcolumnvararray_create(pql);
+   ptmanager_add_columnvararray(pql->ptm, arr);
+   ptcolumnvararray_add(pql, arr, v, NULL);
+   return arr;
+}
+
+static void ptcolumnvarlist_add(struct pqlcontext *pql,
+				struct ptcolumnvararray *arr,
+				struct ptcolumnvar *v) {
+   (void)pql;
+   ptcolumnvararray_add(pql, arr, v, NULL);
+}
+
+////////////////////////////////////////////////////////////
+
+/*
+ * These are not normally used (the logic below specifically avoids
+ * generating vacuous layers containing sequences of length 1 and
+ * alternates of one choice) but enabling them and their call sites
+ * above is useful for making sure normalize really works: there may
+ * legitimately be some test diffs, particularly extra inserted
+ * parentheses in paths, but the output from normalize downstream
+ * should always remain identical.
+ */
+#if 0
+static struct ptpath *pathseq_start(struct pqlcontext *pql, struct ptpath *p) {
+   struct ptpath *reallist;
+
+   reallist = mkptpath_emptysequence(pql);
+   ptpatharray_add(&reallist->sequence.items, p, NULL);
+   return reallist;
+}
+
+static struct ptpath *pathalt_start(struct pqlcontext *pql, struct ptpath *p) {
+   struct ptpath *reallist;
+
+   reallist = mkptpath_emptyalternates(pql);
+   ptpatharray_add(&reallist->alternates.items, p, NULL);
+   return reallist;
+}
+#endif
+
+static struct ptpath *pathseq_add(struct pqlcontext *pql,
+				  struct ptpath *l, struct ptpath *p) {
+   if (l->type == PTP_SEQUENCE && !l->parens) {
+      ptpatharray_add(pql, &l->sequence.items, p, NULL);
+      return l;
+   }
+   else {
+      struct ptpath *reallist;
+
+      reallist = mkptpath_emptysequence(pql);
+      ptpatharray_add(pql, &reallist->sequence.items, l, NULL);
+      ptpatharray_add(pql, &reallist->sequence.items, p, NULL);
+      return reallist;
+   }
+}
+
+static struct ptpath *pathalt_add(struct pqlcontext *pql,
+				  struct ptpath *l, struct ptpath *p) {
+   if (l->type == PTP_ALTERNATES && !l->parens) {
+      ptpatharray_add(pql, &l->alternates.items, p, NULL);
+      return l;
+   }
+   else {
+      struct ptpath *reallist;
+
+      reallist = mkptpath_emptyalternates(pql);
+      ptpatharray_add(pql, &reallist->alternates.items, l, NULL);
+      ptpatharray_add(pql, &reallist->alternates.items, p, NULL);
+      return reallist;
+   }
+}
+
+static void path_bindobj(ptparse_pcb_type *pcb,
+                         struct ptpath *p, struct ptcolumnvar *v) {
+   bool done;
+   unsigned num;
+
+   /*
+    * Avoid binding object variables into vacuous places.
+    *
+    * Note that if we do, normalize will clean it up later; however,
+    * we'd rather signal an error if the user binds two object variables
+    * to the same position, which won't happen unless we hit the same
+    * position. (normalize doesn't do this because, at least as things
+    * stand, normalize needs to not fail.)
+    *
+    * Note that the structure of the grammar guarantees that we can
+    * only get here and find a sequence or set of alternates that can't
+    * be added to any further: either we're working on a finished path
+    * inside an expression, via bind_tail_of_path, or the sequences or
+    * alternates were in parentheses, p->parens is set, and further
+    * sequence or alternate elements encountered will result in a new
+    * ptpath wrapping this one. We don't assert that p->parens is set
+    * though because it often won't be for the first case.
+    */
+   done = false;
+   while (!done) {
+      done = true;
+
+      if (p->type == PTP_SEQUENCE) {
+         PQLASSERT(p->bindobjafter == NULL);
+         num = ptpatharray_num(&p->sequence.items);
+         PQLASSERT(num > 0);
+         p = ptpatharray_get(&p->sequence.items, num-1);
+         PQLASSERT(p->type != PTP_SEQUENCE);
+         done = false;
+      }
+
+      if (p->type == PTP_ALTERNATES) {
+         num = ptpatharray_num(&p->alternates.items);
+         if (num == 1) {
+            PQLASSERT(p->bindobjafter == NULL);
+            p = ptpatharray_get(&p->sequence.items, num-1);
+            PQLASSERT(p->type != PTP_ALTERNATES);
+            done = false;
+         }
+      }
+   }
+
+   if (p->bindobjafter != NULL) {
+      /*
+       * There's already a variable here. This arises from writing
+       * "foo.bar.baz{B} as C" or "C in foo.bar.baz{B}", or from
+       * things like "foo.bar(.baz{B}){C}". While we could create a
+       * let-binding C = B and stuff it in somehow, that would be
+       * messy and there's no legitimate reason to write this. So
+       * let's just complain instead.
+       */
+      complain(pcb->pql, pcb->line, pcb->column,
+               "Variables %s and %s bind the same object",
+               v->name, p->bindobjafter->name);
+      pcb->failed = 1;
+      return;
+   }
+
+   p->bindobjafter = v;
+   /* Mark the path position so unification won't touch it. */
+   p->dontmerge = true;
+}
+
+static void path_bindpath(ptparse_pcb_type *pcb,
+                          struct ptpath *p, struct ptcolumnvar *v) {
+   unsigned num;
+   bool done;
+
+   /*
+    * Avoid binding path variables into vacuous places.
+    *
+    * Again, if we do, normalize will clean it up later, but we'd
+    * rather be able to post an error.
+    *
+    * And again, it's safe to do this here because of the grammar
+    * structure.
+    */
+   done = false;
+   while (!done) {
+      done = true;
+
+      if (p->type == PTP_SEQUENCE) {
+         num = ptpatharray_num(&p->sequence.items);
+         if (num == 1) {
+            PQLASSERT(p->bindpath == NULL);
+            p = ptpatharray_get(&p->sequence.items, num-1);
+            PQLASSERT(p->type != PTP_SEQUENCE);
+            done = false;
+         }
+      }
+
+      if (p->type == PTP_ALTERNATES) {
+         num = ptpatharray_num(&p->alternates.items);
+         if (num == 1) {
+            PQLASSERT(p->bindpath == NULL);
+            p = ptpatharray_get(&p->sequence.items, num-1);
+            PQLASSERT(p->type != PTP_ALTERNATES);
+            done = false;
+         }
+      }
+   }
+
+   if (p->bindpath != NULL) {
+      /*
+       * Likewise; e.g. "foo.bar(.baz@P)@Q".
+       */
+      complain(pcb->pql, pcb->line, pcb->column,
+               "Variables %s and %s bind the same path",
+               v->name, p->bindpath->name);
+      pcb->failed = 1;
+      return;
+   }
+
+   p->bindpath = v;
+   /* Mark the path position so unification won't touch it. */
+   p->dontmerge = true;
+}
+
+
+/*
+ * L < all R  ==>  forall V in R: L < V
+ * L < any R  ==>  exists V in R: L < V
+ */
+static struct ptexpr *do_exists_bop(struct pqlcontext *pql,
+				    struct ptexpr *l,
+				    enum functions op,
+				    struct ptexpr *r)
+{
+   struct ptcolumnvar *v;
+   struct ptexpr *pred;
+
+   v = mkptcolumnvar_fresh(pql);
+   ptcolumnvar_incref(v);
+   pred = mkptexpr_bop(pql, l, op, mkptexpr_readcolumnvar(pql, v));
+
+   return mkptexpr_exists(pql, v, r, pred);
+}
+
+static struct ptexpr *do_forall_bop(struct pqlcontext *pql,
+				    struct ptexpr *l,
+				    enum functions op,
+				    struct ptexpr *r)
+{
+   struct ptcolumnvar *v;
+   struct ptexpr *pred;
+
+   v = mkptcolumnvar_fresh(pql);
+   ptcolumnvar_incref(v);
+   pred = mkptexpr_bop(pql, l, op, mkptexpr_readcolumnvar(pql, v));
+
+   return mkptexpr_forall(pql, v, r, pred);
+}
+
+/*
+ * [select ... from] x.y.z as K   ==>  x.y.z{K}
+ *
+ * We need the PCB for path_bindobj, so it can complain if the variable
+ * is redundant.
+ */
+static void bind_tail_of_path(ptparse_pcb_type *pcb,
+                              struct ptexpr *pe, struct ptcolumnvar *v) {
+   PQLASSERT(pe->type == PTE_PATH);
+   path_bindobj(pcb, pe->path.body, v);
+}
+
+}

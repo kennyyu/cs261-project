@@ -1,0 +1,103 @@
+.\"
+.\" Copyright 2006, 2007
+.\"	The President and Fellows of Harvard College.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
+.\" 3. Neither the name of the University nor the names of its contributors
+.\"    may be used to endorse or promote products derived from this software
+.\"    without specific prior written permission.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE UNIVERSITY AND CONTRIBUTORS ``AS IS'' AND
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE UNIVERSITY OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+.\" SUCH DAMAGE.
+.\"
+.Dd June 4, 2007
+.Dt SAGE 1
+.Os "PASS v2 (1.90)"
+.Sh NAME
+.Nm osage
+.Nd old provenance query engine
+.Sh SYNOPSIS
+.Nm
+.Op Fl p Ar dbpath
+.Op Fl dt
+.Ar queryfile
+.Nm
+.Op Fl p Ar dbpath
+.Op Fl dt
+.Fl c Ar cmd
+.Nm
+.Op Fl p Ar dbpath
+.Op Fl dt
+.Op Fl i
+.Sh DESCRIPTION
+The
+.Nm
+utility executes queries against the provenance database of the
+"lasagna" file system of the Provenance Aware Storage Systems (PASS)
+v2 project.
+It can be run against query text found in a file (the first form),
+with the query text provided on the command line using the
+.Fl c
+flag, or interactively (the default). The
+.Fl i
+flag forces interactive mode even when standard input is not a
+terminal.
+.Pp
+The
+.Fl p
+option specifies the path to the database to query.
+.Pp
+The
+.Fl d
+option enables dumping of the internal query representation as various
+transformations are applied to it;
+the
+.Fl t
+option enables tracing of execution. These two options are useful only
+for debugging
+.Nm .
+.Pp
+The query syntax used by osage is documented in
+.Xr osage 5 .
+New queries should use the newer query language PQL and its interface
+.Xr sage 1 .
+.Sh SEE ALSO
+.Xr sage 1 ,
+.Xr osage 5 ,
+.Xr twig_dump 8 ,
+.Xr waldo 8 ,
+.Xr wdb_dump 8 ,
+.Xr convert2xml 8
+.Pp
+.Pa http://www.eecs.harvard.edu/syrah/pass/
+.Sh HISTORY
+.Nm
+was developed for PASS v2 in early 2007 by David A. Holland with the
+assistance of the rest of the PASS team:
+Uri Braun, Kiran-Kumar Muniswamy-Reddy, and Margo Seltzer.
+.Sh BUGS
+The interactive mode is extremely primitive and probably best avoided
+in favor of repeated executions using the
+.Fl c
+option.
+.Pp
+The mechanisms necessary for allowing ordinary users to access the
+database safely are not yet in place, so
+.Nm
+can only be run usefully by root.

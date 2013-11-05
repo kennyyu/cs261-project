@@ -1,0 +1,462 @@
+#!/bin/sh
+# usage: configure [--options]
+#
+# This is a hand-written configure script. I find maintaining these a
+# lot less trouble than dealing with autoconf.
+#
+# It generates a file called "defs.mk". If it bombs out, you can do
+# without by copying defs.mk.sample and editing as needed for your
+# system.
+#
+# This package is only intended for use on Linux or perhaps BSD; thus,
+# this script does not handle the contortions necessary to work on
+# Solaris or other legacy OSes. If for some reason you want to build
+# on such a system, use the above procedure with defs.mk.sample.
+#
+
+#
+# Copyright 2006, 2007
+#	The President and Fellows of Harvard College.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+# 3. Neither the name of the University nor the names of its contributors
+#    may be used to endorse or promote products derived from this software
+#    without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE UNIVERSITY AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE UNIVERSITY OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+
+
+#
+# We need the following defs:
+#
+#   CC			C compiler
+#   CXX			C++ compiler
+#   LD			linker
+#   AR			static library archiver
+#   RANLIB		library indexer
+#   OBJCOPY		object file munger
+#
+#   DEBUG		-g, -pg, -O2, -O3 -fomit-frame-pointer, etc.
+#
+#   AGCL		AnaGram parser generator
+#
+#   BDB_INCDIR		Directory to prune from depend files
+#   BDB_CFLAGS		CFLAGS for Berkeley DB
+#   BDB_LIBS		LIBS for Berkeley DB
+#
+#   DESTDIR		Installation chroot tree
+#   PREFIX		Installation location
+#   ROOTPREFIX		Installation location for root-volume items
+#   MOUNTSBINDIR	Installation location for Linux mount subprograms
+#
+# Berkeley DB should be version 4.x.
+# You only need AnaGram installed if you want to edit the parser grammars.
+#
+
+DESTDIR=
+PREFIX=/usr/local
+ROOTPREFIX=
+MOUNTSBINDIR=/sbin
+
+CC=gcc
+CXX=g++
+LD=ld
+AR=ar
+RANLIB=true
+OBJCOPY=objcopy
+
+DEBUG=-O2
+
+
+
+############################################################
+
+while [ "x$1" != x ]; do
+   case "$1" in
+	--help) cat << EOF
+$0: Usage: $0 [--options]
+	--destdir=DIR		chroot tree to install into []
+	--prefix=DIR		installation prefix [/usr/local]
+	--rootprefix=DIR	root volume installation prefix [/usr/local]
+	--mountsbindir=DIR	directory for mount subprograms [/sbin]
+	--with-debug=FLAG	Set DEBUG to FLAG [-O2]
+	--debug			Same as --with-debug=-g
+	--profile		Same as --with-debug=-pg
+	--with-c-compiler=CC	C compiler [gcc]
+	--with-c++-compiler=CC	C++ compiler [g++]
+	--with-linker=LD	Linker [ld]
+	--with-archiver=AR	Static library archiver [ar]
+	--with-ranlib=RANLIB	Static library indexer [true]
+	--with-objcopy=OBJCOPY	Object file munger [objcopy]
+	--with-agcl=AGCL	AnaGram command-line tool [agcl]
+	--with-bdb=DIR		Berkeley DB install dir [probed]
+EOF
+	exit 0
+	;;
+
+	--destdir=*) DESTDIR=`echo "$1" | sed 's/^[^=]*=//'`;;
+	--prefix=*)  PREFIX=`echo "$1" | sed 's/^[^=]*=//'`;;
+	--rootprefix=*) ROOTPREFIX=`echo "$1" | sed 's/^[^=]*=//'`;;
+	--mountsbindir=*) MOUNTSBINDIR=`echo "$1" | sed 's/^[^=]*=//'`;;
+	--with-debug=*) DEBUG=`echo "$1" | sed 's/^[^=]*=//'`;;
+	--debug) DEBUG=-g;;
+	--profile) DEBUG=-pg;;
+	--with-c-compiler=*) CC=`echo "$1" | sed 's/^[^=]*=//'`;;
+	--with-c++-compiler=*) CXX=`echo "$1" | sed 's/^[^=]*=//'`;;
+	--with-linker=*) LD=`echo "$1" | sed 's/^[^=]*=//'`;;
+	--with-archiver=*) AR=`echo "$1" | sed 's/^[^=]*=//'`;;
+	--with-ranlib=*) RANLIB=`echo "$1" | sed 's/^[^=]*=//'`;;
+	--with-objcopy=*) OBJCOPY=`echo "$1" | sed 's/^[^=]*=//'`;;
+	--with-agcl=*) AGCL=`echo "$1" | sed 's/^[^=]*=//'`;;
+	--with-bdb=*) BDBDIR=`echo "$1" | sed 's/^[^=]*=//'`;;
+	--*)
+	    echo "$0: Unknown option $1 (try --help)" 1>&2
+	    exit 1
+	;;
+	*)
+	    echo "$0: Usage: $0 [--options]" 1>&2
+	    exit 1
+	;;
+    esac
+shift
+done
+
+if [ -d __conf ]; then
+	echo "Warning: __conf already exists - deleting it"
+	rm -rf __conf || exit 1
+fi
+mkdir __conf || exit 1
+
+if [ "x$ROOTPREFIX" = x ]; then
+    case "$PREFIX" in
+	/usr) ROOTPREFIX= ;;
+	*) ROOTPREFIX="$PREFIX"
+    esac
+fi
+
+############################################################
+#
+# 1. Check toolchain.
+#
+# This is not really meant to be an exhaustive test of whether things
+# like ranlib work, as we assume we're in an environment where they
+# pretty much do.
+
+echo -n  'Checking C toolchain... '
+
+(
+	echo 'int foo(void);'
+) > __conf/foo.h
+(
+	echo '#include "foo.h"'
+	echo 'int foo(void) { return 6; }'
+) > __conf/foo.c
+(
+	echo '#include <stdio.h>'
+	echo '#include "foo.h"'
+	awk < /dev/null 'END {
+	    printf "int main(void) { printf(\"%%d\\n\", foo()); return 0; }\n";
+        }'
+) > __conf/main.c
+
+(
+	set -x &&
+	cd __conf &&
+	$CC -c foo.c &&
+	$LD -r -o foo2.o foo.o
+	$AR -cruv libfoo.a foo2.o &&
+	$RANLIB libfoo.a && 
+	$CC -c main.c &&
+	$CC main.o libfoo.a -o foo
+) > __conf/log 2>&1
+if [ $? != 0 ]; then
+	echo 'failed'
+	echo "Check __conf/log for details"
+	echo "Use the --with-* options to provide a working toolchain."
+	exit 1
+fi
+if [ ! -x __conf/foo ]; then
+	echo 'output __conf/foo missing'
+	echo "Check __conf/log for clues to what happened"
+	echo "Use the --with-* options to provide a working toolchain."
+	exit 1
+fi
+# Don't try to run __conf/foo in case CC is a crosscompiler.
+echo 'ok'
+
+rm -rf __conf
+mkdir __conf
+
+echo -n  'Checking C++ toolchain... '
+
+(
+	echo 'template <class T>'
+	echo 'class foo { public: foo() {} T bar(T t) { return t; } };'
+) > __conf/foo.h
+(
+	echo '#include <stdio.h>'
+	echo '#include "foo.h"'
+	echo 'int main(void) {'
+	echo '   foo<int> f;'
+	awk < /dev/null 'END {
+	    printf "   printf(\"%%d\\n\", f.bar(6));\n"
+        }'
+	echo '   return 0;'
+	echo '}'
+) > __conf/main.c
+
+(
+	set -x &&
+	cd __conf &&
+	$CXX -c main.c &&
+	$CXX main.o -o foo
+) > __conf/log 2>&1
+if [ $? != 0 ]; then
+	echo 'failed'
+	echo "Check __conf/log for details"
+	echo "Use the --with-* options to provide a working toolchain."
+	exit 1
+fi
+if [ ! -x __conf/foo ]; then
+	echo 'output __conf/foo missing'
+	echo "Check __conf/log for clues to what happened"
+	echo "Use the --with-* options to provide a working toolchain."
+	exit 1
+fi
+# Don't try to run __conf/foo in case CXX is a crosscompiler.
+echo 'ok'
+
+rm -rf __conf
+mkdir __conf
+
+
+############################################################
+#
+# 2. Check if AnaGram is installed
+
+if [ "x$AGCL" = x ]; then
+	echo -n 'Checking for agcl... '
+
+	cat > __conf/foo.syn << EOF
+grammar
+  -> foo..., 10
+foo
+  -> 'a-z'+32
+EOF
+	(
+		set -x &&
+		cd __conf &&
+		agcl foo.syn
+	) > __conf/log 2>&1
+	if [ $? != 0 ]; then
+		echo 'no'
+		AGCL=false
+	else
+		echo 'yes'
+		AGCL=agcl
+	fi
+fi
+
+rm -rf __conf
+mkdir __conf
+
+############################################################
+#
+# 3. Look for Berkeley DB.
+
+echo -n 'Looking for Berkeley DB... '
+
+cat > __conf/foo.c <<EOF
+#include <db.h>
+void foo(void) {
+   DB_ENV *e;
+   DBT dbt;
+   DB *db;
+
+   db_env_create(&e, 0);
+   e->open(e, "abcd", DB_CREATE|DB_RECOVER|DB_INIT_LOG|DB_INIT_TXN, 0);
+
+   db_create(&db, e, 0);
+   db->open(db, NULL, "foo.db", NULL, DB_BTREE, 0, 0600);
+}
+int main() { return 0; }
+EOF
+
+dbcompile() {
+    rm -f __conf/foo.o
+    echo "Compiling Berkeley DB test program with CFLAGS=$1" >> __conf/log
+    (
+	set -x &&
+	cd __conf &&
+	$CC $1 -c foo.c
+    ) >> __conf/log 2>&1 || return 1
+    if [ -f __conf/foo.o ]; then
+	return 0
+    fi
+    return 1
+}
+
+dblink() {
+    rm -f __conf/foo
+    echo "Linking Berkeley DB test program with LIBS=$1" >> __conf/log
+    (
+	set -x &&
+	cd __conf &&
+	$CC foo.o $1 -o foo
+    ) >> __conf/log 2>&1 || return 1
+    if [ -x __conf/foo ]; then
+	return 0
+    fi
+    return 1
+}
+
+# Look for bdb installed the way bdb does it.
+if [ "x$BDBDIR" = x ]; then
+    for VER in 4.7 4.6 4.5 4.4 4.3 4.2 4.1; do
+	if [ -d /usr/local/BerkeleyDB.$VER ]; then
+	    BDBDIR=/usr/local/BerkeleyDB.$VER
+	    break;
+	elif [ -d /opt/BerkeleyDB.$VER ]; then
+	    BDBDIR=/opt/BerkeleyDB.$VER
+	    break;
+	fi
+    done
+fi
+if [ "x$BDBDIR" != x ]; then
+    BDB_INCDIR=$BDBDIR/include
+    BDB_CFLAGS=-I$BDB_INCDIR
+    BDB_LIBS=$BDBDIR/lib/libdb.a
+    echo "$BDBDIR"
+    BDB_FOUND=1
+else
+    BDB_FOUND=0
+    if dbcompile ""; then
+	BDB_INCDIR=/nonexistent
+	BDB_CFLAGS=
+
+	for L in "" -ldb4 -ldb; do
+	    if dblink $L; then
+		BDB_LIBS=$L
+		BDB_FOUND=1
+		echo "system"
+		break;
+	    elif dblink "$L -lpthread"; then
+		BDB_LIBS="$L -lpthread"
+		BDB_FOUND=1
+		echo "system, using -lpthread"
+		break;
+	    fi
+	done
+    else
+	for P in /usr/local /usr/pkg /usr/contrib \
+			/opt /opt/bdb4 /opt/bdb /opt/db4 /opt/db /usr; do
+	    if dbcompile -I$P/include; then
+		BDB_PREFIX=$P
+		BDB_INCDIR=$P/include
+		break;
+	    elif dbcompile -I$P/include/db4; then
+		BDB_PREFIX=$P
+		BDB_INCDIR=$P/include/db4
+		break;
+	    fi
+	done
+	if [ "x$BDB_INCDIR" != x ]; then
+	    BDB_CFLAGS=-I$BDB_INCDIR
+
+	    for L in -ldb4 -ldb; do
+		if dblink "-L$BDB_PREFIX/lib $L"; then
+		    BDB_LIBS="-L$BDB_PREFIX/lib $L"
+		    BDB_FOUND=1
+		    echo "in $BDB_PREFIX"
+		    break;
+		elif dblink "-L$BDB_PREFIX/lib $L -lpthread"; then
+		    BDB_LIBS="-L$BDB_PREFIX/lib $L -lpthread"
+		    BDB_FOUND=1
+		    echo "in $BDB_PREFIX, using -lpthread"
+		    break;
+		fi
+	    done
+	fi    
+    fi
+fi
+    
+if [ $BDB_FOUND = 0 ]; then
+    echo 'missing'
+    echo "$0: I need Berkeley DB 4.x" 1>&2
+    echo "Please install it and/or use the --with-bdb option." 1>&2
+    exit 1
+fi
+
+rm -rf __conf
+
+############################################################
+#
+# 4. Check for various known OS issues
+
+U=`uname 2>&1 || nothing`
+
+if [ "$U" = NetBSD ]; then
+    T=`echo "$BDB_LIBS" | awk '{ for (i=1;i<=NF;i++) {
+	if ($i ~ "^-L") {
+	    sub("^-L", "-R", $i);
+	    print $i;
+	}
+     }}'`
+    BDB_LIBS="$T $BDB_LIBS"
+    echo "OS is NetBSD: Adding -R paths to BDB_LIBS"
+fi
+
+if [ "$U" = Linux ]; then
+    if echo "$BDB_LIBS" | grep -w '\-lpthread' >/dev/null; then
+	:
+    else
+	BDB_LIBS="$BDB_LIBS -lpthread"
+	echo "OS is Linux: Adding -lpthread to BDB_LIBS"
+    fi
+fi
+
+############################################################
+#
+# 5. Write defs.mk
+
+(
+    echo DESTDIR="$DESTDIR"
+    echo PREFIX="$PREFIX"
+    echo ROOTPREFIX="$ROOTPREFIX"
+    echo MOUNTSBINDIR="$MOUNTSBINDIR"
+    echo
+    echo CC="$CC"
+    echo CXX="$CXX"
+    echo LD="$LD"
+    echo AR="$AR"
+    echo RANLIB="$RANLIB"
+    echo OBJCOPY="$OBJCOPY"
+    echo
+    echo DEBUG="$DEBUG"
+    echo
+    echo AGCL="$AGCL"
+    echo
+    echo BDB_INCDIR="$BDB_INCDIR"
+    echo BDB_CFLAGS="$BDB_CFLAGS"
+    echo BDB_LIBS="$BDB_LIBS"
+) > defs.mk
+
+exit 0

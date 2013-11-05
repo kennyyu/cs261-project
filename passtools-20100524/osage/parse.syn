@@ -1,0 +1,358 @@
+{
+/*
+ * Copyright 2006, 2007
+ *	The President and Fellows of Harvard College.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE UNIVERSITY AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE UNIVERSITY OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+#include <stdarg.h>
+#include <stdlib.h>
+#include "ptnode.h"
+}
+
+[
+  parser file name = "#.cc"
+  line numbers
+  ~allow macros
+  //inline functions
+  event driven
+  auto resynch
+]
+
+[ reserve keywords { "contains", "for", /*"func",*/ "let", "where", "in" } ]
+
+query $
+  -> ws?, expr:e, [';', ws?], eof = results = e;
+
+(ptnode *) expr
+  -> bind expr
+  -> lambda expr
+
+(ptnode *) bind expr
+  -> filter expr
+  -> for head:h, "in", ws?, expr:e = pt_scope(h,e);
+  -> let head:h, "in", ws?, expr:e = pt_scope(h,e);
+// -> "func" ...
+
+(ptnode *) lambda expr
+  -> lambda head:h, '{', ws?, expr:e, '}', ws? = pt_scope(h,e);
+
+(ptnode *) for head
+  -> "for", ws, binding name:b, expr:g = pt_forbind(b,g);
+
+(ptnode *) let head
+  -> "let", ws, binding name:b, expr:g = pt_letbind(b,g);
+
+(ptnode *) lambda head
+  -> '\\', ws?, ident:s, ws? = pt_lambda(pt_varname(s));
+
+// because pt_varname must be *called* before the expr is parsed
+(ptnode *) binding name
+  -> ident:s, ws?, "=", ws? = pt_varname(s);
+
+(ptnode *) filter expr
+  -> tuple expr
+  -> tuple expr:e, "where", ws, expr:f = pt_filter(e,f);
+
+(ptnode *) tuple expr
+  -> real tuple expr:n = pt_tuple(n);
+
+(ptnode *) real tuple expr
+  -> path expr:n                               = pt_mklist(n);
+  -> real tuple expr:ns, ',', ws?, path expr:n = pt_addlist(ns,n);
+
+(ptnode *) path expr
+  -> qualified path element:n = n;
+//  -> path element:n, sequence transition:m = -;
+  -> path expr:n, "->", ws?, qualified path element:m = pt_bop(n,OP_PATH,m);
+  -> path expr:n, "->*", ws?, qualified path element:m = pt_bop(n,OP_LONGPATHZ,m);
+  -> path expr:n, "->+", ws?, qualified path element:m = pt_bop(n,OP_LONGPATHNZ,m);
+
+(ptnode *) qualified path element
+  -> path element:n = n;
+  -> path element:n, '?' = pt_uop(OP_OPTIONAL, n);
+// these are ambiguous with * and + arithmetic operators
+//  -> path element:n, '*' = pt_uop(OP_REPEAT, pt_uop(OP_OPTIONAL, n));
+//  -> path element:n, '+' = pt_uop(OP_REPEAT, n);
+
+//(ptnode *) sequence transition
+//  -> alternative transition:n = n;
+//  -> sequence transition:n, alternative transition:m = -;
+
+//(ptnode *) alternative transition
+//  -> primary transition:n = n;
+//  -> alternative transition:ns, '|', ws?, primary transition:n = -;
+
+//(ptnode *) primary transition
+//  -> "->", ws?, path element:n = -;
+//  -> "-[", ws?, ident:s, "]->", ws?, path element:n = -;
+//  -> wildcard transition
+
+//(ptnode *) wildcard transition
+//  -> grouped transition:n           = -;
+//  -> grouped transition:n, '?', ws? = -;
+//  -> grouped transition:n, '*', ws? = -;
+//  -> grouped transition:n, '+', ws? = -;
+//  -> "->*", ws? = -;
+//  -> "->+", ws? = -;
+//
+//(ptnode *) grouped transition
+//  -> '{', ws?, sequence transition:n, '}', ws? = n;
+
+(ptnode *) path element
+//  -> value expr:n = pt_path_element(n, 0);
+//  -> value expr:n, '!', ws? = pt_path_element(n, 1);
+  -> value expr:n = n;
+  -> value expr:n, '!', ws? = pt_uop(OP_EXTRACT, n);
+
+// XXX: use '/' for immediate relationship and "//" for indirect,
+// instead of the ??/**/++ values?
+//(ptnode *) select expression
+//  -> tag expression
+//  -> select expression:l, '/', tag expression:r = pt_bop(l,OP_PATH,r);
+//  -> select expression:l, "//", tag expression:r = pt_bop(l,OP_LONGPATH,r);
+
+//(ptnode *) tag expression
+//  -> value expression
+//  -> value expression:e, '?', ws?    = pt_uop(OP_OPTIONAL, e);
+//  -> value expression:e, "?...", ws? = pt_uop(OP_REPEAT,pt_uop(OP_OPTIONAL,e));
+//  -> value expression:e, "...", ws?  = pt_uop(OP_REPEAT, e);
+//  -> value expression:e, "->", ws?   = pt_uop(OP_EXTRACT, e);
+
+(ptnode *) value expr
+  -> logical expr
+
+(ptnode *) logical expr
+  -> equality expr
+  -> logical expr:l, "&&", ws?, equality expr:r = pt_bop(l, OP_LOGAND, r);
+  -> logical expr:l, "||", ws?, equality expr:r = pt_bop(l, OP_LOGOR, r);
+
+(ptnode *) equality expr
+  -> comparison expr
+  -> equality expr:l, "==", ws?, comparison expr:r = pt_bop(l, OP_EQ, r);
+  -> equality expr:l, "!=", ws?, comparison expr:r = pt_bop(l, OP_NE, r);
+
+(ptnode *) comparison expr
+  -> cons
+  -> comparison expr:l, '~',  ws?, cons:r = pt_bop(l,OP_MATCH,r);
+  -> comparison expr:l, "!~", ws?, cons:r = pt_bop(l,OP_NOMATCH,r);
+  -> comparison expr:l, '<',  ws?, cons:r = pt_bop(l,OP_LT,r);
+  -> comparison expr:l, '>',  ws?, cons:r = pt_bop(l,OP_GT,r);
+  -> comparison expr:l, "<=", ws?, cons:r = pt_bop(l,OP_LE,r);
+  -> comparison expr:l, ">=", ws?, cons:r = pt_bop(l,OP_GE,r);
+  -> comparison expr:l, "contains", ws?, cons:r = pt_bop(l,OP_CONTAINS,r);
+
+(ptnode *) cons
+  -> term
+  -> cons:l, ':', term:r = pt_bop(l,OP_CONS,r);
+  -> range start:a, number:b, ws? = pt_range(a, pt_number(b));
+
+// to avoid clobbering one number with the other
+(ptnode *) range start
+  -> number:a, ws, "to", ws = pt_number(a);
+
+(ptnode *) term
+  -> factor
+  -> term:l, '+', ws?, factor:r = pt_bop(l,OP_ADD,r);
+  -> term:l, '-', ws?, factor:r = pt_bop(l,OP_SUB,r);
+  -> term:l, "++", ws?, factor:r = pt_bop(l,OP_STRCAT,r);
+
+(ptnode *) factor
+  -> suffix expr
+  -> factor:l, '*', ws?, suffix expr:r = pt_bop(l,OP_MUL,r);
+  -> factor:l, '/', ws?, suffix expr:r = pt_bop(l,OP_DIV,r);
+  -> factor:l, '%', ws?, suffix expr:r = pt_bop(l,OP_MOD,r);
+
+(ptnode *) suffix expr
+  -> prefix expr
+  -> suffix expr:e, '.', ident:x, ws? = pt_fieldref(e,x);
+  -> suffix expr:x, '(', ws?, tuple expr:e, ')', ws? = pt_func(x,e);
+
+(ptnode *) prefix expr
+  -> base expr
+  -> '-', prefix expr:e = pt_uop(OP_NEG,e);
+  -> '!', prefix expr:e = pt_uop(OP_LOGNOT,e);
+
+(ptnode *) base expr
+  -> ident:s, ws? = pt_varname(s);
+  -> string:s, ws? = pt_string(s);
+  -> number:n, ws? = pt_number(n);
+  -> '@', ident:x, ws? = pt_field(x);
+  -> "**", ws? = pt_all();
+  -> '(', ws?, expr:e, ')', ws? = e;
+  -> '[', ws?, expr:e, ']', ws? = pt_scope(pt_lambda(pt_varname("this")), e);
+  -> "[[", ws?, expr:e, "]]", ws? = pt_listconstant(e);
+  -> "()" = pt_tuple(NULL);
+  -> "[]" = pt_listconstant(NULL);
+
+////////////////////////////////////////////////////////////
+
+//(ptnode *) number1
+//  -> number:n = pt_number(n);
+
+//(ptnode *) order list
+//  -> order field:n = pt_mklist(n);
+//  -> order list:ns, ',', ws?, order field:n = pt_addlist(ns,n);
+//
+//(ptnode *) order field
+//  -> union expression:e                    = pt_oneorder(e,0);
+//  -> union expression:e, "ascending", ws?  = pt_oneorder(e,-1);
+//  -> union expression:e, "descending", ws? = pt_oneorder(e,1);
+
+//(char *) xml block
+//  -> text char - ws char:c    = startstring(c);
+//  -> xml block:s, text char:c = addstring(s,c);
+
+////////////////////////////////////////////////////////////
+
+(char *) string
+  -> '"', string body:s, '"' = s;
+
+(char *) string body
+  ->                              = emptystring();
+  -> string body:s, string char:c = addstring(s,c);
+
+(int) string char
+  -> text char - '"' - '\\':c = c;
+  -> '\\', '\\' = '\\';
+  -> '\\', '"'  = '"';
+  -> '\\', 'n'  = '\n';
+  -> '\\', 't'  = '\t';
+  -> '\\', '(', hex digit:a, hex digit:b, ')' = a*16+b;
+
+(char *) ident
+  -> letter:c                = startstring(c);
+  -> ident:s, letter+digit:c = addstring(s,c);
+
+(char *) number
+  -> digit:c                       = startstring(c);
+  -> number:s, letter+digit:c      = addstring(s,c);
+
+(int) hex digit
+  -> 'a-f':c = c-'a'+10;
+  -> 'A-F':c = c-'A'+10;
+  -> digit:c = c-'0';
+
+(void) ws
+  -> ws char...
+
+letter = 'a-z' + 'A-Z' + '_'
+digit = '0-9'
+text char = 32..126 + ws char
+ws char = ' ' + '\t' + '\r' + '\n'
+
+eof = 0
+
+{
+static ptnode *results;
+static char stringbuf[4096];
+static size_t stringbufpos;
+
+#define SYNTAX_ERROR          \
+	whine(parser_whereis(), "%s", PCB.error_message)
+#define REDUCTION_TOKEN_ERROR \
+	die(parser_whereis(), "Internal error: bad reduction token")
+#define PARSE_STACK_OVERFLOW  \
+	die(parser_whereis(), "Parse stack overflow")
+
+location parser_whereis(void) {
+   location loc;
+   loc.line = PCB.line;
+   loc.col = PCB.column;
+   return loc;
+}
+
+static char *addstring(char *s, int ch) {
+   if (stringbufpos >= sizeof(stringbuf)-1) {
+      die(parser_whereis(), "String or identifier too long");
+   }
+   stringbuf[stringbufpos++] = ch;
+   stringbuf[stringbufpos] = 0;
+   return s;
+}
+
+static char *startstring(int ch) {
+   stringbufpos = 0;
+   return addstring(stringbuf, ch);
+}
+
+static char *emptystring(void) {
+   stringbufpos = 0;
+   stringbuf[stringbufpos] = 0;
+   return stringbuf;
+}
+
+ptnode *parse_file(const char *path) {
+   FILE *f;
+   int ch;
+
+   f = fopen(path, "r");
+   if (!f) {
+      fprintf(stderr, "%s: Open failed\n", path);
+      return NULL;
+   }
+
+   init_parse();
+   while ((ch = getc(f))!=EOF) {
+      PCB.input_code = ch;
+      parse();
+      if (PCB.exit_flag!=AG_RUNNING_CODE && PCB.exit_flag!=AG_SUCCESS_CODE) {
+         return NULL;
+      }
+   }
+   PCB.input_code = 0;
+   parse();
+   if (PCB.exit_flag != AG_SUCCESS_CODE) {
+      return NULL;
+   }
+
+   ptnode *ret = results;
+   results = NULL;
+   return ret;
+}
+
+ptnode *parse_string(const char *string) {
+
+   init_parse();
+   while (*string) {
+      PCB.input_code = (unsigned char) *(string++);
+      parse();
+      if (PCB.exit_flag!=AG_RUNNING_CODE && PCB.exit_flag!=AG_SUCCESS_CODE) {
+         return NULL;
+      }
+   }
+   PCB.input_code = 0;
+   parse();
+   if (PCB.exit_flag != AG_SUCCESS_CODE) {
+      return NULL;
+   }
+
+   ptnode *ret = results;
+   results = NULL;
+   return ret;
+}
+
+}

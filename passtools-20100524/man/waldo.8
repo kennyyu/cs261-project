@@ -1,0 +1,128 @@
+.\"
+.\" Copyright 2006, 2007
+.\"	The President and Fellows of Harvard College.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
+.\" 3. Neither the name of the University nor the names of its contributors
+.\"    may be used to endorse or promote products derived from this software
+.\"    without specific prior written permission.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE UNIVERSITY AND CONTRIBUTORS ``AS IS'' AND
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE UNIVERSITY OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+.\" SUCH DAMAGE.
+.\"
+.Dd March 17, 2010
+.Dt WALDO 8
+.Os "PASS v2 (20100317)"
+.Sh NAME
+.Nm waldo
+.Nd kernel remote manipulation tool for lasagna provenance-aware file system
+.Sh SYNOPSIS
+.Nm
+.Op Fl h
+.Op Fl u
+.Op Fl b
+.Op Fl p Ar dbpath
+.Ar directory
+.Nm
+.Op Fl p Ar dbpath
+.Ar file
+.Sh DESCRIPTION
+.Nm
+processes logged provenance data on behalf of the lasagna
+provenance-aware file system.
+Provenance is written by the file system to
+.Dq twig
+files (twigs are lightweight logs) and then moved into a database
+by
+.Nm .
+.Sh USAGE
+In the first usage (online mode)
+.Nm
+is given a directory containing zero or more twig files.
+This is normally the
+.Pa .lasagna_stuff
+directory of a lasagna volume.
+In this mode
+.Nm
+runs as a daemon, first recovering the database to a consistent state
+(in case the previous shutdown was unclean) and then processing
+twig files.
+It will first process files that already exist and then wait for more
+to appear, until instructed to shut down.
+.Pp
+Note: while in the long run startup and shutdown of
+.Nm
+is intended to be handled automatically by the mount and unmount
+process for lasagna volumes, as of this writing
+.Nm
+must be started and stopped manually.
+.Pp
+If the
+.Fl b
+option is given, a backup copy of each twig file processed is
+retained.
+Otherwise, processed files are removed.
+.Pp
+In the second usage (offline mode)
+.Nm
+is given a single twig file to process.
+It will process this file, leaving it untouched, and then exit.
+The
+.Fl b
+option is ignored.
+.Pp
+If called with
+.Fl h
+or
+.Fl u
+prints the help/usage information and exits.
+.Sh EXAMPLES
+To load
+.Pa myworkload.twig
+into a database:
+.Pp
+.Dl waldo -p ./myworkload.db ./myworkload.twig
+.Pp
+To mount a lasagna volume stored on
+.Pa /dev/hda5
+using the ext3 file system as the underlying storage:
+.Pp
+.Bd -literal -offset indent -compact
+mount -text3 /dev/hda5 /mnt
+cd /mnt/.lasagna_stuff
+waldo .
+cd /
+mount -tlasagna /mnt /mnt
+.Ed
+.Sh SEE ALSO
+.Xr sage 1 ,
+.Xr twig 5 ,
+.Xr twig_dump 8 ,
+.Xr wdb_dump 8
+.\" Xr mount.lasagna
+.\" Xr umount.lasagna
+.Pp
+.Pa http://www.eecs.harvard.edu/syrah/pass/
+.Sh HISTORY
+.Nm
+was originally developed for PASS v2 in early 2007 by Uri Braun with
+the
+assistance of the rest of the PASS team:
+David A. Holland, Kiran-Kumar Muniswamy-Reddy, and Margo Seltzer.
+Development is ongoing.

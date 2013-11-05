@@ -1,0 +1,34 @@
+Version of the DPAPI lib meant for testing PA apps.
+
+It logs the application-reported provenance to a file. The default
+output name is "passtest.pt", but this can be changed by setting the
+PASSTEST environment variable to some other file name.
+
+The output format is that used by pesto.
+
+Current limitations:
+
+  - It will log records for and references to real files, but it doesn't
+    declare them.
+
+    (Nor, in general, can it do so reliably, without using ELF tricks
+    to intercept close() and a few other calls, which, while possible,
+    is a lot more elaborate than I'm willing to get right now.)
+
+    This will cause the pesto tools to mostly refuse to process the
+    output without hand-editing.
+
+
+  - It does not keep track of versions. Objects read from are always
+    version 1.
+
+
+  - It is copied from the pesto DPAPI code and like that code does not
+    handle multistring records. (Yet.)
+
+
+  - The output will contain explicit versions if explicit versions
+    appear in the xrefs sent to pawrite(). The pesto tools will not
+    parse these.
+
+

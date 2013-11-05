@@ -1,0 +1,79 @@
+.\"
+.\" Copyright 2006, 2007
+.\"	The President and Fellows of Harvard College.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
+.\" 3. Neither the name of the University nor the names of its contributors
+.\"    may be used to endorse or promote products derived from this software
+.\"    without specific prior written permission.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE UNIVERSITY AND CONTRIBUTORS ``AS IS'' AND
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE UNIVERSITY OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+.\" SUCH DAMAGE.
+.\"
+.Dd June 4, 2007
+.Dt OSAGE 5
+.Os "PASS v2 (1.90)"
+.Sh NAME
+.Nm osage
+.Nd old provenance query syntax
+.Sh DESCRIPTION
+The
+.Nm
+query language was formerly the primary vehicle for accessing the
+provenance
+databases of the Provenance Aware Storage Systems (PASS) project.
+(The current method is via Path Query Language, or PQL.)
+Because provenance is not relational, it is not a relational query
+language like SQL and does not support joins. Instead, because
+provenance is graph-oriented, it has particular support for tracing
+paths through a graph. In other respects it is a simple
+expression-oriented language with dynamic typing.
+.Pp
+The ideas behind the path expressions used in
+.Nm
+are generalized from the W3C's XPath and XQuery languages. Because
+.Nm
+provenance ancestry graphs are a different and more general
+environment from XML,
+.Nm
+is different from XPath, and (we believe) cleaner and more powerful.
+.Pp
+The language syntax is currently in the middle of a major revision, so
+this page is a stub. For now, please consult the example queries and
+BNF grammar found in
+the
+.Nm
+source.
+.Sh EXAMPLES
+Coming soon...
+.Sh SEE ALSO
+.Xr sage 1 ,
+.Xr osage 1 ,
+.Xr wdb_dump 8
+.Pp
+.Pa http://www.eecs.harvard.edu/syrah/pass/
+.Sh HISTORY
+The
+.Nm
+query language and syntax
+was developed for PASS v2 in early 2007 by the PASS team:
+Uri Braun, David A. Holland, Kiran-Kumar Muniswamy-Reddy, and Margo
+Seltzer.
+.Sh BUGS
+This man page ought to contain useful information.
