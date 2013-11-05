@@ -1,4 +1,4 @@
-import bsddb
+import bsddb3 as bsddb
 import sys
 
 if len(sys.argv) < 3:
