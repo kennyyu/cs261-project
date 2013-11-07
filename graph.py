@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import sys
 import struct
+from termcolor import colored
 
 """
 struct pnode_version {
@@ -57,6 +58,26 @@ PROV_VALUE_TYPES = [
     "OBJECTVERSION",
 ]
 
+def parse_string(s):
+    return {"STRING": s}
+
+def parse_timestamp(s):
+    sec, nsec = struct.unpack("ii", s)
+    return {"SEC": sec, "NSEC": nsec}
+
+def parse_pnode_version(s):
+    pnode, version = struct.unpack(PNODE_VERSION_FORMAT_STRING, s)
+    return {"PNODE": pnode, "VERSION": version}
+
+def parse_tokens(s):
+    numtokens = len(s) / 4
+    format = "I" * numtokens
+    tokens = struct.unpack(format, s)
+    return {"TOKENS": tokens}
+
+def parse_int(s):
+    return {"INT": struct.unpack("i", s)}
+
 TYPE_CONV = {
     "TYPE": parse_string,
     "NAME": parse_string,
@@ -70,27 +91,8 @@ TYPE_CONV = {
     "PID": parse_int,
     "CREAT": parse_string,
     "UNLINK": parse_string,
+    "INPUT": parse_pnode_version,
 }
-
-def parse_string(s):
-    return s
-
-def parse_timestamp(s):
-    sec, nsec = struct.unpack("ii", s)
-    return sec, nsec
-
-def parse_pnode_version(s):
-    pnode, version = struct.unpack(PNODE_VERSION_FORMAT_STRING)
-    return pnode, version
-
-def parse_tokens(s):
-    numtokens = len(s) / 4
-    format = "I" * str(numtokens)
-    tokens = struct.unpack(format, s)
-    return tokens
-
-def parse_int(s, numbytes):
-    return struct.unpack("i", s)
 
 PROV_PACKED_VALUE_TYPES = [
     "INVALID",
@@ -115,14 +117,18 @@ def parse_prov(provdb, nodes):
             unpacked_string = "" + str(code_or_attrlen) + "s" + str(valuelen) + "s"
             attr, value = struct.unpack(unpacked_string, v_suffix)
             if pnode in nodes:
-                nodes[pnode][version][attr] = (flags, valuestring, valuelen, ':'.join(x.encode('hex') for x in value))
+                val = TYPE_CONV[attr](value)
+                nodes[pnode][version][attr] = (flags, val)
+#                nodes[pnode][version][attr] = (flags, valuestring, valuelen, ':'.join(x.encode('hex') for x in value))
 #                nodes[pnode][version][valuestring] = (flags, code_or_attrlen, valuelen, attr, ':'.join(x.encode('hex') for x in value))
         else:
             valuestring = PROV_PACKED_VALUE_TYPES[code_or_attrlen]
-            unpacked_string = "" + str(valuelen) + "s"
-            value = struct.unpack(unpacked_string, v_suffix)
+#            unpacked_string = "" + str(valuelen) + "s"
+#            value = struct.unpack(unpacked_string, v_suffix)
             if pnode in nodes:
-                nodes[pnode][version][valuestring] = (flags, valuelen, value[0])
+                val = TYPE_CONV[valuestring](v_suffix)
+                nodes[pnode][version][valuestring] = (flags, val)
+#                nodes[pnode][version][valuestring] = (flags, valuelen, value[0])
 #                nodes[pnode][version][valuestring] = (flags, valuelen, value[0], ':'.join(x.encode('hex') for x in value))
 
 
@@ -169,13 +175,14 @@ if __name__ == "__main__":
     digraph, nodes = build_graph(parentdb)
     parse_prov(provdb, nodes)
     for pnode in nodes:
-        print pnode, "->"
+        print pnode
         for version in nodes[pnode]:
-            print " ", version
+            print colored("->", "white", "on_red"), version
             for key in nodes[pnode][version]:
-                print "   ", key, "->", nodes[pnode][version][key]
-    nx.draw_networkx(digraph, pos=nx.spring_layout(digraph, scale=5, iterations=1000))
-    plt.show()
+                print colored("--->", "white", "on_red"), key, "->", nodes[pnode][version][key]
+
+    #nx.draw_networkx(digraph, pos=nx.spring_layout(digraph, scale=5, iterations=1000))
+    #plt.show()
 
 
 
