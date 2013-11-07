@@ -10,7 +10,7 @@ struct pnode_version {
    uint32_t version;
 };
 """
-ANCESTRY_FORMAT_STRING = "QI"
+PNODE_VERSION_FORMAT_STRING = "QI"
 
 """
 child db : parent -> child
@@ -18,6 +18,113 @@ parent db : child -> parent
 """
 CHILD_DB = "child.db"
 PARENT_DB = "parent.db"
+
+"""
+struct provdb_val {
+   uint8_t  pdb_flags;
+   uint8_t  pdb_valuetype;
+   union {
+      uint16_t pdb_attrcode;        /* if PROV_ATTRFLAG_PACKED */
+      uint16_t pdb_attrlen;        /* if not */
+   } __attribute__((__packed__));
+   uint32_t pdb_valuelen;
+   uint8_t  pdb_data[0];
+} __attribute__((__packed__));
+"""
+PROV_FORMAT_STRING = "BBHI"
+
+"""
+prov db : (pnode, version) -> provdb_val
+"""
+PROV_DB = "prov.db"
+
+PROVDB_TOKENIZED = 1
+PROVDB_PACKED = 2
+PROVDB_ANCESTRY = 4
+PROVDB_MISMATCH = 8
+
+PROV_VALUE_TYPES = [
+    "NIL",
+    "STRING",
+    "MULTISTRING",
+    "INT",
+    "REAL",
+    "TIMESTAMP",
+    "INODE",
+    "PNODE",
+    "PNODEVERSION",
+    "OBJECT",
+    "OBJECTVERSION",
+]
+
+TYPE_CONV = {
+    "TYPE": parse_string,
+    "NAME": parse_string,
+    "INODE": parse_int,
+    "PATH": parse_string,
+    "ARGV": parse_tokens,
+    "ENV": parse_tokens,
+    "FREEZETIME": parse_timestamp,
+    "EXECTIME": parse_timestamp,
+    "FORKPARENT": parse_pnode_version,
+    "PID": parse_int,
+    "CREAT": parse_string,
+    "UNLINK": parse_string,
+}
+
+def parse_string(s):
+    return s
+
+def parse_timestamp(s):
+    sec, nsec = struct.unpack("ii", s)
+    return sec, nsec
+
+def parse_pnode_version(s):
+    pnode, version = struct.unpack(PNODE_VERSION_FORMAT_STRING)
+    return pnode, version
+
+def parse_tokens(s):
+    numtokens = len(s) / 4
+    format = "I" * str(numtokens)
+    tokens = struct.unpack(format, s)
+    return tokens
+
+def parse_int(s, numbytes):
+    return struct.unpack("i", s)
+
+PROV_PACKED_VALUE_TYPES = [
+    "INVALID",
+    "TYPE",
+    "NAME",
+    "INODE",
+    "PATH",
+    "ARGV",
+    "ENV",
+    "FREEZETIME",
+    "INPUT",
+]
+
+def parse_prov(provdb, nodes):
+    for k,v in provdb.iteritems():
+        pnode, version = struct.unpack(PNODE_VERSION_FORMAT_STRING, k)
+        v_prefix = v[:8]
+        v_suffix = v[8:]
+        flags, valuetype, code_or_attrlen, valuelen = struct.unpack(PROV_FORMAT_STRING, v_prefix)
+        if not flags & PROVDB_PACKED:
+            valuestring = PROV_VALUE_TYPES[valuetype]
+            unpacked_string = "" + str(code_or_attrlen) + "s" + str(valuelen) + "s"
+            attr, value = struct.unpack(unpacked_string, v_suffix)
+            if pnode in nodes:
+                nodes[pnode][version][attr] = (flags, valuestring, valuelen, ':'.join(x.encode('hex') for x in value))
+#                nodes[pnode][version][valuestring] = (flags, code_or_attrlen, valuelen, attr, ':'.join(x.encode('hex') for x in value))
+        else:
+            valuestring = PROV_PACKED_VALUE_TYPES[code_or_attrlen]
+            unpacked_string = "" + str(valuelen) + "s"
+            value = struct.unpack(unpacked_string, v_suffix)
+            if pnode in nodes:
+                nodes[pnode][version][valuestring] = (flags, valuelen, value[0])
+#                nodes[pnode][version][valuestring] = (flags, valuelen, value[0], ':'.join(x.encode('hex') for x in value))
+
 
 def add_and_get_node(pnode, version, nodes):
     """
@@ -27,11 +134,12 @@ def add_and_get_node(pnode, version, nodes):
 
     Adds an entry to nodes for the pnode if it doesn't already exist
     """
-    tuple = pnode #(pnode, version)
-    if tuple not in nodes:
-        nodes[tuple] = {}
-        nodes[tuple]["name"] = str(tuple)
-    return nodes[tuple]["name"]
+    if pnode not in nodes:
+        nodes[pnode] = {}
+        nodes[pnode][0] = {}
+    nodes[pnode][version] = {}
+    # TODO
+    return pnode
 
 def build_graph(parentdb):
     """
@@ -40,8 +148,8 @@ def build_graph(parentdb):
     nodes = {}
     digraph = nx.DiGraph()
     for child, parent in parentdb.iteritems():
-        p_pnode, p_version = struct.unpack(ANCESTRY_FORMAT_STRING, parent)
-        c_pnode, c_version = struct.unpack(ANCESTRY_FORMAT_STRING, child)
+        p_pnode, p_version = struct.unpack(PNODE_VERSION_FORMAT_STRING, parent)
+        c_pnode, c_version = struct.unpack(PNODE_VERSION_FORMAT_STRING, child)
         p_object = add_and_get_node(p_pnode, p_version, nodes)
         c_object = add_and_get_node(c_pnode, c_version, nodes)
         digraph.add_edge(p_object, c_object)
@@ -56,8 +164,16 @@ if __name__ == "__main__":
     dbdir = sys.argv[1]
     childdb = bsddb.btopen(dbdir + "/" + CHILD_DB)
     parentdb = bsddb.btopen(dbdir + "/" + PARENT_DB)
+    provdb = bsddb.btopen(dbdir + "/" + PROV_DB)
 
     digraph, nodes = build_graph(parentdb)
+    parse_prov(provdb, nodes)
+    for pnode in nodes:
+        print pnode, "->"
+        for version in nodes[pnode]:
+            print " ", version
+            for key in nodes[pnode][version]:
+                print "   ", key, "->", nodes[pnode][version][key]
     nx.draw_networkx(digraph, pos=nx.spring_layout(digraph, scale=5, iterations=1000))
     plt.show()
 
