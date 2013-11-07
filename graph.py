@@ -116,6 +116,9 @@ PROV_PACKED_VALUE_TYPES = [
 ]
 
 def parse_prov(provdb, tokens, nodes):
+    """
+    Fills in nodes with the deserialized provenance data.
+    """
     for k,v in provdb.iteritems():
         pnode, version = struct.unpack(PNODE_VERSION_FORMAT_STRING, k)
         v_prefix = v[:8]
@@ -173,6 +176,24 @@ def build_graph(parentdb):
         #print "parent (%d,%d) -> child (%d,%d)" % (p_pnode, p_version, c_pnode, c_version)
     return digraph, nodes
 
+COLOR_MAP = {
+    "PROC": 'r',
+    "FILE": 'g',
+    "NP_FILE": 'b',
+    "PIPE": 'y',
+    "DIR": 'o',
+}
+
+def draw_graph(digraph, nodes):
+    """
+    Draws the digraph, coloring the nodes based on the type of provenance record.
+    """
+    dgnodes = digraph.nodes()
+    values = [COLOR_MAP[nodes[n][0]["TYPE"]] for n in dgnodes]
+    nx.draw_networkx(digraph, pos=nx.spring_layout(digraph, scale=5, iterations=1000),
+                     node_color=values)
+    plt.show()
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("DAG builder from provenance data")
     parser.add_argument("dbdir", type=str, help="db directory")
@@ -198,6 +219,5 @@ if __name__ == "__main__":
 
     should_graph = args["graph"]
     if should_graph:
-        nx.draw_networkx(digraph, pos=nx.spring_layout(digraph, scale=5, iterations=1000))
-        plt.show()
+        draw_graph(digraph, nodes)
 
