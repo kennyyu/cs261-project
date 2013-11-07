@@ -58,24 +58,32 @@ PROV_VALUE_TYPES = [
     "OBJECTVERSION",
 ]
 
-def parse_string(s):
+"""
+tnum2tok : token number (int) -> string
+
+Need to use rnopen
+"""
+TNUM2TOK_DB = "tnum2tok.db"
+
+def parse_string(s, tokens):
     return {"STRING": s}
 
-def parse_timestamp(s):
+def parse_timestamp(s, tokens):
     sec, nsec = struct.unpack("ii", s)
     return {"SEC": sec, "NSEC": nsec}
 
-def parse_pnode_version(s):
+def parse_pnode_version(s, tokens):
     pnode, version = struct.unpack(PNODE_VERSION_FORMAT_STRING, s)
     return {"PNODE": pnode, "VERSION": version}
 
-def parse_tokens(s):
+def parse_tokens(s, tokens):
     numtokens = len(s) / 4
     format = "I" * numtokens
-    tokens = struct.unpack(format, s)
+    nums = struct.unpack(format, s)
+    tokens = {tokens[num] for num in nums}
     return {"TOKENS": tokens}
 
-def parse_int(s):
+def parse_int(s, tokens):
     return {"INT": struct.unpack("i", s)}
 
 TYPE_CONV = {
@@ -106,7 +114,7 @@ PROV_PACKED_VALUE_TYPES = [
     "INPUT",
 ]
 
-def parse_prov(provdb, nodes):
+def parse_prov(provdb, tokens, nodes):
     for k,v in provdb.iteritems():
         pnode, version = struct.unpack(PNODE_VERSION_FORMAT_STRING, k)
         v_prefix = v[:8]
@@ -117,7 +125,7 @@ def parse_prov(provdb, nodes):
             unpacked_string = "" + str(code_or_attrlen) + "s" + str(valuelen) + "s"
             attr, value = struct.unpack(unpacked_string, v_suffix)
             if pnode in nodes:
-                val = TYPE_CONV[attr](value)
+                val = TYPE_CONV[attr](value, tokens)
                 nodes[pnode][version][attr] = (flags, val)
 #                nodes[pnode][version][attr] = (flags, valuestring, valuelen, ':'.join(x.encode('hex') for x in value))
 #                nodes[pnode][version][valuestring] = (flags, code_or_attrlen, valuelen, attr, ':'.join(x.encode('hex') for x in value))
@@ -126,11 +134,19 @@ def parse_prov(provdb, nodes):
 #            unpacked_string = "" + str(valuelen) + "s"
 #            value = struct.unpack(unpacked_string, v_suffix)
             if pnode in nodes:
-                val = TYPE_CONV[valuestring](v_suffix)
+                val = TYPE_CONV[valuestring](v_suffix, tokens)
                 nodes[pnode][version][valuestring] = (flags, val)
 #                nodes[pnode][version][valuestring] = (flags, valuelen, value[0])
 #                nodes[pnode][version][valuestring] = (flags, valuelen, value[0], ':'.join(x.encode('hex') for x in value))
 
+def load_token_map(tnum2tokdb):
+    """
+    builds a dictionary of token numbers -> tokens
+    """
+    tokens = {}
+    for k,v in tnum2tokdb.iteritems():
+        tokens[k] = v
+    return tokens
 
 def add_and_get_node(pnode, version, nodes):
     """
@@ -171,9 +187,12 @@ if __name__ == "__main__":
     childdb = bsddb.btopen(dbdir + "/" + CHILD_DB)
     parentdb = bsddb.btopen(dbdir + "/" + PARENT_DB)
     provdb = bsddb.btopen(dbdir + "/" + PROV_DB)
+    tnum2tokdb = bsddb.rnopen(dbdir + "/" + TNUM2TOK_DB)
+
+    tokens = load_token_map(tnum2tokdb)
 
     digraph, nodes = build_graph(parentdb)
-    parse_prov(provdb, nodes)
+    parse_prov(provdb, tokens, nodes)
     for pnode in nodes:
         print pnode
         for version in nodes[pnode]:
