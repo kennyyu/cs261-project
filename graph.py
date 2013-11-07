@@ -66,7 +66,7 @@ Need to use rnopen
 TNUM2TOK_DB = "tnum2tok.db"
 
 def parse_string(s, tokens):
-    return {"STRING": s}
+    return s
 
 def parse_timestamp(s, tokens):
     sec, nsec = struct.unpack("ii", s)
@@ -80,11 +80,11 @@ def parse_tokens(s, tokens):
     numtokens = len(s) / 4
     format = "I" * numtokens
     nums = struct.unpack(format, s)
-    tokens = {tokens[num] for num in nums}
-    return {"TOKENS": tokens}
+    tokens = [tokens[num] for num in nums]
+    return tokens
 
 def parse_int(s, tokens):
-    return {"INT": struct.unpack("i", s)}
+    return struct.unpack("i", s)[0]
 
 TYPE_CONV = {
     "TYPE": parse_string,
@@ -120,24 +120,18 @@ def parse_prov(provdb, tokens, nodes):
         v_prefix = v[:8]
         v_suffix = v[8:]
         flags, valuetype, code_or_attrlen, valuelen = struct.unpack(PROV_FORMAT_STRING, v_prefix)
+        attr = None
+        value_string = None
         if not flags & PROVDB_PACKED:
-            valuestring = PROV_VALUE_TYPES[valuetype]
-            unpacked_string = "" + str(code_or_attrlen) + "s" + str(valuelen) + "s"
-            attr, value = struct.unpack(unpacked_string, v_suffix)
-            if pnode in nodes:
-                val = TYPE_CONV[attr](value, tokens)
-                nodes[pnode][version][attr] = (flags, val)
-#                nodes[pnode][version][attr] = (flags, valuestring, valuelen, ':'.join(x.encode('hex') for x in value))
-#                nodes[pnode][version][valuestring] = (flags, code_or_attrlen, valuelen, attr, ':'.join(x.encode('hex') for x in value))
+            attrlen = code_or_attrlen
+            format_string = "" + str(attrlen) + "s" + str(valuelen) + "s"
+            attr, value_string = struct.unpack(format_string, v_suffix)
         else:
-            valuestring = PROV_PACKED_VALUE_TYPES[code_or_attrlen]
-#            unpacked_string = "" + str(valuelen) + "s"
-#            value = struct.unpack(unpacked_string, v_suffix)
-            if pnode in nodes:
-                val = TYPE_CONV[valuestring](v_suffix, tokens)
-                nodes[pnode][version][valuestring] = (flags, val)
-#                nodes[pnode][version][valuestring] = (flags, valuelen, value[0])
-#                nodes[pnode][version][valuestring] = (flags, valuelen, value[0], ':'.join(x.encode('hex') for x in value))
+            code = code_or_attrlen
+            attr = PROV_PACKED_VALUE_TYPES[code]
+            value_string = v_suffix
+        if pnode in nodes:
+            nodes[pnode][version][attr] = TYPE_CONV[attr](value_string, tokens)
 
 def load_token_map(tnum2tokdb):
     """
@@ -203,48 +197,3 @@ if __name__ == "__main__":
     #nx.draw_networkx(digraph, pos=nx.spring_layout(digraph, scale=5, iterations=1000))
     #plt.show()
 
-
-
-
-
-
-"""
-FORMAT_STRING = "bbHI"
-
-if len(sys.argv) < 3:
-    print "usage: %s file mode" % sys.argv[0]
-    sys.exit()
-
-dbfile = sys.argv[1]
-mode = sys.argv[2]
-
-PROVDB_TOKENIZED = 1
-PROVDB_PACKED = 2
-PROVDB_ANCESTRY = 4
-PROVDB_MISMATCH = 8
-
-db = bsddb.btopen(dbfile)
-if mode == "s":
-    for k,v in db.iteritems():
-        v_prefix = v[:8]
-        v_suffix = v[8:]
-        flags, valuetype, code_or_attrlen, valuelen = struct.unpack(FORMAT_STRING, v_prefix)
-        if not flags & PROVDB_PACKED:
-            unpacked_string = "" + str(code_or_attrlen) + "s" + str(valuelen) + "s"
-            attr, value = struct.unpack(unpacked_string, v_suffix)
-            print k, flags, valuetype, code_or_attrlen, valuelen, attr, ':'.join(x.encode('hex') for x in value)
-        else:
-            unpacked_string = "" + str(valuelen) + "s"
-            value = struct.unpack(unpacked_string, v_suffix)
-            print k, flags, valuetype, code_or_attrlen, valuelen, value[0], ':'.join(x.encode('hex') for x in value)
-#            print flags, valuetype, code_or_attrlen, valuelen, v_suffix[:code_or_attrlen], int(v_suffix[code_or_attrlen:])
-#            attr = v[:code_or_attrlen]
-#            value = v[code_or_attrlen:]
-#            print k, flags, "[(type, len, value)", valuetype, valuelen, value, "] [(len, attr):", code_or_attrlen, attr, "]"
-#        print k, struct.unpack(FORMAT_STRING, v_prefix), v_suffix
-elif mode == "kx":
-    print [k for k,_ in db.iteritems()]
-elif mode == "vx":
-    print [v for _,v in db.iteritems()]
-db.close()
-"""
