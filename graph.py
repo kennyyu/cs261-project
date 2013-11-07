@@ -1,3 +1,4 @@
+import argparse
 import bsddb3 as bsddb
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -173,18 +174,19 @@ def build_graph(parentdb):
     return digraph, nodes
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print "usage: %s db-directory" % sys.argv[0]
-        sys.exit(-1)
+    parser = argparse.ArgumentParser("DAG builder from provenance data")
+    parser.add_argument("dbdir", type=str, help="db directory")
+    parser.add_argument("--graph", dest="graph", action="store_true",
+                        help="should generate graph")
+    args = vars(parser.parse_args())
 
-    dbdir = sys.argv[1]
+    dbdir = args["dbdir"]
     childdb = bsddb.btopen(dbdir + "/" + CHILD_DB)
     parentdb = bsddb.btopen(dbdir + "/" + PARENT_DB)
     provdb = bsddb.btopen(dbdir + "/" + PROV_DB)
     tnum2tokdb = bsddb.rnopen(dbdir + "/" + TNUM2TOK_DB)
 
     tokens = load_token_map(tnum2tokdb)
-
     digraph, nodes = build_graph(parentdb)
     parse_prov(provdb, tokens, nodes)
     for pnode in nodes:
@@ -194,6 +196,8 @@ if __name__ == "__main__":
             for key in nodes[pnode][version]:
                 print colored("--->", "white", "on_red"), key, "->", nodes[pnode][version][key]
 
-    #nx.draw_networkx(digraph, pos=nx.spring_layout(digraph, scale=5, iterations=1000))
-    #plt.show()
+    should_graph = args["graph"]
+    if should_graph:
+        nx.draw_networkx(digraph, pos=nx.spring_layout(digraph, scale=5, iterations=1000))
+        plt.show()
 
