@@ -192,7 +192,14 @@ def draw_graph(digraph, nodes):
     values = [COLOR_MAP[nodes[n][0]["TYPE"]] for n in dgnodes]
     nx.draw_networkx(digraph, pos=nx.spring_layout(digraph, scale=5, iterations=1000),
                      node_color=values)
+    from networkx.readwrite import json_graph
+    data = json_graph.node_link_data(digraph)
+    import json
+    s = json.dumps(data)
+    print s
+
     plt.show()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("DAG builder from provenance data")
