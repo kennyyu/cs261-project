@@ -16,4 +16,4 @@ Python Dependencies
 
 Lib Dependencies
 
-* [http://stackoverflow.com/questions/15195530/sudo-easy-install-bsddb3-error-cant-find-a-local-berkeley-db-installation](BerkeleyDB)
+* [BerkeleyDB](http://stackoverflow.com/questions/15195530/sudo-easy-install-bsddb3-error-cant-find-a-local-berkeley-db-installation)
