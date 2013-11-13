@@ -49,18 +49,22 @@ TODO
 \section{Introduction}
 Provenance is metadata that tracks the history of all changes to files. In provenance-aware storage systems like PASS \cite{pass} and PASSv2 \cite{passv2}, the file system automatically tracks all dependencies whenever a file is created, modified, or deleted. These dependencies include the command that was executed to modify the file, the environment of the command, and all input files. The generated provenance forms a directed acyclic graph of typed nodes (e.g. files, processes, pipes) with properties (e.g. name, execution time, pid) and typed edges (e.g. forked, input, versioning). 
 
+To make sense of the large amounts of data, Macko et. al. have developed Orbiter, a tool to visualize provenance graphs with semantic zoom \cite{orbiter}. Margo et. al. have developed techniques to analyze large provenance graphs and to extract useful information from these graphs, including semantic file attributes \cite{fileattributes}. Using simple provenance statistics on nodes (e.g. neighbors, file count, process count, edge count) and features from \texttt{stat}, they determine with high accuracy the type of files (e.g. source files, configuration files). Furthermore, they have identified key properties of provenance graphs and developed new centrality metrics to perform local clustering of graphs, separating the huge provenance graphs into smaller semantic tasks or workloads \cite{clustering}.
+
 Applications that require provenance collection typically place great emphasis on data integrity. Given this priority, a natural goal of provenance systems is to detect intrusions on the system. Somayaji et. al. have developed techniques for detecting intrusions based on system call sequences, and counteract these by exponentially delaying or aborting system calls, rendering the system useless for a malicious attacker \cite{somayaji}\cite{somayaji-recent}. These intrusions include exploiting vulnerabilities in the SSH daemon and sendmail to obtain a shell with root privileges.
 
-Given the extensive amount of data PASS collects on file-file, file-process, and process-process dependencies, it seems plausible to detect intrusions based on provenance data collected by PASS. 
+Given the extensive amount of data PASS collects on file-file, file-process, and process-process dependencies, it seems plausible to detect intrusions based on provenance data collected by PASS. Tariq et. al. generalize Somayaji's sequences of system calls to sequences of provenance system events \cite{correlated-anomalies} to develop an intrusion detection system (IDS) in a distributed system. Their system uses bloom filters to store hashes of $k$-tuples--representing a sequence of provenance events--and then use these bit vectors to correlate anomalies across multiple hosts. King et. al. have developed Backtrack \cite{backtrack}, a modified Linux kernel that tracks dependencies between operating system objects (files, processes, file names) in a similar fashion to PASS. Given an intrusion, Backtrack builds a backwards casual graph to determine the entry point of an intrusion, and they have extended Backtrack with forward causal graphs to determine possibly tainted files, processes, and hosts from an intrusion in a distributed system \cite{multihost}. However, their system does not find a way of detecting an intrusion. Lei et. al. build similar process-file dependency trees, which they call access trees, and define a compatibility function to compare access trees with the goal of predicting future file accesses based on the current access tree pattern \cite{fileprefetch}.
 
-====
+Despite the existing work to detect intrusions and anomalies, Cao et. al. argue that any intrusion detection system cannot always distinguish good behaviors from bad behaviors because users behave too randomly to have an accurate model of the user's behavior \cite{fuzzy}. They propose their fuzzy anomaly detection approach to extend the training models in existing intrusion detection systems to account for the inherent fuzzy nature of intrusion detection. When training an IDS, instead of assigning hard 0s or 1s for features, their approach provides a way to reliably map these features to weights in the interval $[0,1]$. 
 
-Several existing systems 
-intrusion detection systems using system calls
+In this paper, we present a technique to analyze existing provenance data to detect if an intrusion occurred. 
 
-other systems to collect provenance to detect intrusions
-
-our approach: analyze properties of dags, histograms?
+{\bf TODO: TALK ABOUT OUR TECHNIQUES.} We build on TODO's work and extend ... blah blah blah ... combine techniques together ... blah blah. The contributions of this paper are:
+\begin{enumerate}
+\item TODO: the techniques we use to analyze provenance data
+\item TODO: types of intrusions that this system can detect, and the accuracy in detecting intrusions
+\item TODO: future work for using provenance data to detect intrusions
+\end{enumerate}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESIGN
@@ -89,8 +93,20 @@ TODO
 
 \begin{thebibliography}{99}
 
+\bibitem{fuzzy}
+\textsc{Cao, D., Qiu, M., Chen, Z., Hu, F., Zhu, Y., and Wang, B.} Intelligent Fuzzy Anomaly Detection of Malicious Software. In {\em Internal Journal of Advanced Intelligence}, vol. 4, no. 1, pp 69-86 (December 2012).
+
 \bibitem{somayaji-recent}
 \textsc{Inoue, H. and Somayaji, A.} Lookahead Pairs and Full Sequences: A Tale of Two Anomaly Detection Methods. In {\em 2nd Annual Symposium on Information Assurance} (June 2007). 
+
+\bibitem{backtrack}
+\textsc{King, S. T. and Chen, P. M.} Backtracking Intrusions. In {\em SOSP'03 Proceedings of the nineteenth ACM symposium on Operating systems principles} (December 2003).
+
+\bibitem{multihost}
+\textsc{King, S. T., Mao Z. M., Lucchetti, D. G., and Chen, P. M.} Enriching intrusion alerts through multi-host causality. In {\em Proceedings of the 2005 Network and Distributed System Security Symposium} (February 2005).
+
+\bibitem{fileprefetch}
+\textsc{Lei, H. and Duchamp, D.} An Analytical Approach to File Prefetching. In {\em Proceedings of the USENIX 1997 Annual Technical Conference} (January 1997).
 
 \bibitem{clustering}
 \textsc{Macko, P., Margo, D., Seltzer, M.} Local Clustering in Provenance Graphs (Extended Version). In {\em Proceedings of the 22nd ACM international conference on Conference on information \& knowledge management} (August 2013).
@@ -109,6 +125,9 @@ TODO
 
 \bibitem{somayaji}
 \textsc{Somayaji, A. and Forrest, S.} Automated Response Using System-Call Delays. In {\em Proceedings of the 2000 USENIX Annual Technical Conference} (August 2000).
+
+\bibitem{correlated-anomalies}
+\textsc{Tariq, D., Baig, B., Gehani, A., Mahmood, S., Tahir, R., Aqil, A., and Zaffar, F.} Identifying the provenance of correlated anomalies. In {\em SAC'11 Proceedings of the 2011 ACM Symposium on Applied Computing} (March 2011).
 
 \end{thebibliography}
 
