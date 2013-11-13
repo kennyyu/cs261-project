@@ -1,1 +1,0 @@
-umount_lasagna_helper.o: umount_lasagna_helper.c
