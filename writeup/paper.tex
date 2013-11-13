@@ -70,22 +70,54 @@ In this paper, we present a technique to analyze existing provenance data to det
 % DESIGN
 %
 
-\section{Design}
-TODO
+\section{Design and Implementation}
+TODO: ideas:
+\begin{enumerate}
+\item somayaji: sequence of system calls
+\item semantic file attributes: determine types of files. use simple statistics on files.
+\item histograms: use simple statistics and build histogram of file attributes on a process name/file
+\item local clustering: use centrality metrics
+\item fuzzy rules
+\item hash k-tuples of provenance events and compare bit vectors
+\item backwards and forwards causality graphs
+\item access compatibility $\frac{1}{2}(C_d + C_e)$
+\item intersect good DAG and bad DAG and look at intersection of DAG
+\end{enumerate}
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % EVALUATION
 %
 
 \section{Evaluation}
-TODO
+
+\subsection{Evaluation Methodology}
+TODO:
+types of exploits we ran.
+how we ran it.
+how we collected the data.
+the software we used.
+
+\subsection{Results}
+TODO:
+true positives.
+false positives.
+graphs?
+
+\subsection{Discussion}
+TODO: 
+why the numbers are the way they are.
+what types of intrusions can we detect.
+which provenance data is most useful
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CONCLUSION
 %
 
-\section{Conclusion}
+\section{Conclusion and Future Work}
 TODO
+not realtime. can it be made to detect intrusions in realtime?
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % BIBLIOGRAPHY
