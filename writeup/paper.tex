@@ -18,17 +18,17 @@
 
 \usepackage[margin=1in]{geometry}
 
-\title{TODO: Intrusion Detection through Provenance}
+\title{{\bf TODO: Intrusion Detection through Provenance}}
 \author{
     Kenny Yu\\
     Harvard University\\
-    kennyyu@college.harvard.edu
+    \href{mailto:kennyyu@college.harvard.edu}{\texttt{kennyyu@college.harvard.edu}}
   \and
     R. J. Aquino\\
     Harvard University\\
-    rjaquino@college.harvard.edu
+    \href{mailto:rjaquino@college.harvard.edu}{\texttt{rjaquino@college.harvard.edu}}
 }
-\date{November 12, 2013}
+\date{CS261, Fall 2013}
 
 \begin{document}
 
@@ -36,7 +36,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % ABSTRACT
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
 
 \begin{abstract}
 TODO
@@ -44,35 +44,48 @@ TODO
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % INTRODUCTION
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
 
 \section{Introduction}
-TODO
+Provenance is metadata that tracks the history of all changes to files. In provenance-aware storage systems like PASS \cite{pass} and PASSv2 \cite{passv2}, the file system automatically tracks all dependencies whenever a file is created, modified, or deleted. These dependencies include the command that was executed to modify the file, the environment of the command, and all input files. The generated provenance forms a directed acyclic graph of typed nodes (e.g. files, processes, pipes) with properties (e.g. name, execution time, pid) and typed edges (e.g. forked, input, versioning). 
+
+Applications that require provenance collection typically place great emphasis on data integrity. Given this priority, a natural goal of provenance systems is to detect intrusions on the system. Somayaji et. al. have developed techniques for detecting intrusions based on system call sequences, and counteract these by exponentially delaying or aborting system calls, rendering the system useless for a malicious attacker \cite{somayaji}\cite{somayaji-recent}. These intrusions include exploiting vulnerabilities in the SSH daemon and sendmail to obtain a shell with root privileges.
+
+Given the extensive amount of data PASS collects on file-file, file-process, and process-process dependencies, it seems plausible to detect intrusions based on provenance data collected by PASS. 
+
+====
+
+Several existing systems 
+intrusion detection systems using system calls
+
+other systems to collect provenance to detect intrusions
+
+our approach: analyze properties of dags, histograms?
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESIGN
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
 
 \section{Design}
 TODO
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % EVALUATION
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
 
 \section{Evaluation}
 TODO
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CONCLUSION
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
 
 \section{Conclusion}
 TODO
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % BIBLIOGRAPHY
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
 
 \begin{thebibliography}{99}
 
