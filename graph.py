@@ -135,7 +135,11 @@ def parse_prov(provdb, tokens, nodes):
             attr = PROV_PACKED_VALUE_TYPES[code]
             value_string = v_suffix
         if pnode in nodes:
-            nodes[pnode][version][attr] = TYPE_CONV[attr](value_string, tokens)
+            if attr not in nodes[pnode][version]:
+                nodes[pnode][version][attr] = []
+            nodes[pnode][version][attr].append(TYPE_CONV[attr](value_string, tokens))
+            if flags & PROVDB_ANCESTRY:
+                nodes[pnode][version]["ANCESTRY"] = True
 
 def load_token_map(tnum2tokdb):
     """
@@ -189,7 +193,7 @@ def draw_graph(digraph, nodes):
     Draws the digraph, coloring the nodes based on the type of provenance record.
     """
     dgnodes = digraph.nodes()
-    values = [COLOR_MAP[nodes[n][0]["TYPE"]] for n in dgnodes]
+    values = [COLOR_MAP[nodes[n][0]["TYPE"][0]] for n in dgnodes]
     nx.draw_networkx(digraph, pos=nx.spring_layout(digraph, scale=5, iterations=1000),
                      node_color=values)
     from networkx.readwrite import json_graph
