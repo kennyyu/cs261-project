@@ -1,5 +1,6 @@
 import networkx as nx
-from scipy.stats.kde import gaussian_kde
+from sklearn.neighbors import KernelDensity
+import numpy as np
 
 """
 NAMING CONVENTION
@@ -42,6 +43,12 @@ def file_in_version(dg, nodes=None):
 def file_out_version(dg, nodes=None):
     return count_edge_types(dg, nodes=nodes, dir='out', nodetype='FILE', edgetype='VERSION', nodetype2='FILE')
 
+def get_name(dg, node):
+    if "NAME" not in dg.node[node]:
+        return "PIPE-" + str(node)
+    else:
+        return dg.node[node]["NAME"]
+
 def count_edge_types(dg, dir, nodetype, edgetype, nodetype2, nodes=None):
     """
     Returns dict: name -> [counts]
@@ -50,18 +57,24 @@ def count_edge_types(dg, dir, nodetype, edgetype, nodetype2, nodes=None):
     if not nodes:
         nodes = dg.nodes()
     for node in nodes:
+        if "TYPE" not in dg.node[node]:
+            continue
         if dg.node[node]["TYPE"] != nodetype:
             continue
-        name = dg.node[node]["NAME"]
+        name = get_name(dg, node)
         count = 0
         if dir == 'out':
             for (_, other) in dg.out_edges(node):
+                if "TYPE" not in dg.node[other]:
+                    continue
                 if dg.node[other]["TYPE"] != nodetype2:
                     continue
                 if dg[node][other]["TYPE"] == edgetype:
                     count += 1
         else:
             for (other, _) in dg.in_edges(node):
+                if "TYPE" not in dg.node[other]:
+                    continue
                 if dg.node[other]["TYPE"] != nodetype2:
                     continue
                 if dg[other][node]["TYPE"] == edgetype:
@@ -73,10 +86,12 @@ def count_edge_types(dg, dir, nodetype, edgetype, nodetype2, nodes=None):
     return d
 
 def kde_make(counts):
-    return gaussian_kde(counts)
+    kde = KernelDensity()
+    kde.fit(np.vstack(counts))
+    return kde
 
 def kde_predict(kde, val):
-    return kde.evaluate(val)
+    return np.exp(kde.score(val))
 
 functions = {
     'file_out_file': file_out_file,
@@ -99,13 +114,13 @@ def get_vals(dg, node):
     and return them in a dictionary
     """
     d = {}
-    name = dg.node[node]["NAME"]
+    name = get_name(dg, node)
     for k in functions:
         result = functions[k](dg, nodes=[node])
         if name in result:
-            d[k] = result[name]
+            d[k] = result[name][0]
         else:
-            d[k] = []
+            d[k] = 0
     return d
 
 def make_kdes(dg):
@@ -117,7 +132,7 @@ def make_kdes(dg):
     d = {}
     # add all node names
     for node in dg.nodes():
-        name = dg.node[node]["NAME"]
+        name = get_name(dg, node)
         if name not in d:
             d[name] = {}
             for k in functions:
@@ -136,11 +151,11 @@ def kde_predict_all(dg, kdes, node):
     a name
     """
     dvals = get_vals(dg, node)
-    name = dg.node[node]["NAME"]
+    name = get_name(dg, node)
     d = {}
     for fname in kdes[name]:
         if kdes[name][fname]:
-            d[fname] = kdes[name][fname].evaluate(dval[fname])
+            d[fname] = kde_predict(kdes[name][fname], dvals[fname])
         else:
             d[fname] = None
     return d
