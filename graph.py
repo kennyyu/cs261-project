@@ -281,6 +281,10 @@ if __name__ == "__main__":
 
     graph_join(digraph, nodes)
 
+    import analyze as a
+    d = digraph
+    a.make_kdes(d)
+
     should_graph = args["graph"]
     if should_graph:
         draw_graph(digraph, nodes)
