@@ -179,3 +179,14 @@ def kde_predict_all(kdes, dg, node):
             d[fname] = None
     return d
 
+from networkx.algorithms.link_analysis.pagerank_alg import pagerank_numpy
+
+def pagerank(dg):
+    rank = pagerank_numpy(dg)
+    d = {}
+    for node in dg.nodes():
+        name = get_name(dg, node)
+        if name not in d:
+            d[name] = []
+        d[name].append(rank[node])
+    return d
