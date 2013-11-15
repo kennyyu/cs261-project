@@ -242,7 +242,7 @@ def graph_join(digraph, nodes):
                         assert(digraph.has_edge((pnode_other,version_other),(pnode,version)))
                         digraph.add_edge((pnode_other,version_other),
                                          (pnode,version),
-                                         type="INPUT")
+                                         TYPE="INPUT")
                 elif "FORKPARENT" in nodes[pnode][version]:
                     del copy["FORKPARENT"]
                     pnode_other = nodes[pnode][version]["FORKPARENT"]["PNODE"]
@@ -250,7 +250,7 @@ def graph_join(digraph, nodes):
                     assert(digraph.has_edge((pnode_other,version_other),(pnode,version)))
                     digraph.add_edge((pnode_other,version_other),
                                      (pnode,version),
-                                     type="FORKPARENT")
+                                     TYPE="FORKPARENT")
             # do this if ancestry exists or not
             for (k,v) in copy.items():
                 digraph.node[(pnode,version)][k] = v
