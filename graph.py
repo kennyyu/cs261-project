@@ -166,7 +166,7 @@ def add_and_get_node(pnode, version, nodes):
         nodes[pnode][0] = {}
     nodes[pnode][version] = {}
     # TODO
-    return pnode
+    return (pnode, version)
 
 def build_graph(parentdb):
     """
@@ -196,7 +196,10 @@ def draw_graph(digraph, nodes):
     Draws the digraph, coloring the nodes based on the type of provenance record.
     """
     dgnodes = digraph.nodes()
-    values = [COLOR_MAP[nodes[n][0]["TYPE"]] for n in dgnodes]
+    for n in dgnodes:
+        print n
+        print digraph.node[n]["TYPE"]
+    values = [COLOR_MAP[digraph.node[n]["TYPE"]] for n in dgnodes]
     nx.draw_networkx(digraph, pos=nx.spring_layout(digraph, scale=5, iterations=1000),
                      node_color=values)
     from networkx.readwrite import json_graph
@@ -206,6 +209,51 @@ def draw_graph(digraph, nodes):
     print s
 
     plt.show()
+
+def graph_join(digraph, nodes):
+    """
+    Puts all the information from nodes into digraph
+    """
+    for pnode in nodes:
+        # add node 0 information to all nodes
+        version0 = nodes[pnode][0]
+        for version in nodes[pnode]:
+            # add VERSION edges
+            digraph.add_node((pnode,version))
+            prev_version = version - 1
+            if prev_version >= 0:
+                digraph.add_edge((pnode,prev_version),(pnode,version),TYPE="VERSION")
+            for (k,v) in version0.items():
+                if k == "ANCESTRY":
+                    continue
+                if k == "INPUT":
+                    continue
+                if k == "FORKPARENT":
+                    continue
+                digraph.node[(pnode,version)][k] = v
+            copy = nodes[pnode][version].copy()
+            if "ANCESTRY" in nodes[pnode][version]:
+                del copy["ANCESTRY"]
+                if "INPUT" in nodes[pnode][version]:
+                    del copy["INPUT"]
+                    for input in nodes[pnode][version]["INPUT"]:
+                        pnode_other = input["PNODE"]
+                        version_other = input["VERSION"]
+                        assert(digraph.has_edge((pnode_other,version_other),(pnode,version)))
+                        digraph.add_edge((pnode_other,version_other),
+                                         (pnode,version),
+                                         type="INPUT")
+                elif "FORKPARENT" in nodes[pnode][version]:
+                    del copy["FORKPARENT"]
+                    pnode_other = nodes[pnode][version]["FORKPARENT"]["PNODE"]
+                    version_other = nodes[pnode][version]["FORKPARENT"]["VERSION"]
+                    assert(digraph.has_edge((pnode_other,version_other),(pnode,version)))
+                    digraph.add_edge((pnode_other,version_other),
+                                     (pnode,version),
+                                     type="FORKPARENT")
+            # do this if ancestry exists or not
+            for (k,v) in copy.items():
+                digraph.node[(pnode,version)][k] = v
 
 
 if __name__ == "__main__":
@@ -230,6 +278,8 @@ if __name__ == "__main__":
             print colored("->", "white", "on_red"), version
             for key in nodes[pnode][version]:
                 print colored("--->", "white", "on_red"), key, "->", nodes[pnode][version][key]
+
+    graph_join(digraph, nodes)
 
     should_graph = args["graph"]
     if should_graph:
