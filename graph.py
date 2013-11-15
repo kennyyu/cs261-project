@@ -196,9 +196,6 @@ def draw_graph(digraph, nodes):
     Draws the digraph, coloring the nodes based on the type of provenance record.
     """
     dgnodes = digraph.nodes()
-    for n in dgnodes:
-        print n
-        print digraph.node[n]["TYPE"]
     values = [COLOR_MAP[digraph.node[n]["TYPE"]] for n in dgnodes]
     nx.draw_networkx(digraph, pos=nx.spring_layout(digraph, scale=5, iterations=1000),
                      node_color=values)

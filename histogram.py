@@ -91,10 +91,9 @@ def count_edge_types(dg, dir, nodetype, edgetype, nodetype2, nodes=None):
                     continue
                 if dg[other][node]["TYPE"] == edgetype:
                     count += 1
-        if count > 0:
-            if name not in d:
-                d[name] = []
-            d[name].append(count)
+        if name not in d:
+            d[name] = []
+        d[name].append(count)
     return d
 
 def kde_make(counts):
