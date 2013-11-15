@@ -98,7 +98,8 @@ def count_edge_types(dg, dir, nodetype, edgetype, nodetype2, nodes=None):
     return d
 
 def kde_make(counts):
-    kde = KernelDensity(bandwidth=0.5)
+    #TODO use tophat kernel?
+    kde = KernelDensity(bandwidth=0.5, kernel='gaussian')
     kde = kde.fit(np.vstack(counts))
     return kde
 
@@ -161,10 +162,12 @@ def make_kdes(dg):
                 d[name][k] = None
     return d
 
-def kde_predict_all(dg, kdes, node):
+def kde_predict_all(kdes, dg, node):
     """
     given kdes ( name -> dictionary: function name -> kde)
-    a name
+    node must be a node in dg
+
+    kdes does not have to be generated from dg
     """
     dvals = get_vals(dg, node)
     name = get_name(dg, node)

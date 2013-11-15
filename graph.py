@@ -255,15 +255,7 @@ def graph_join(digraph, nodes):
             for (k,v) in copy.items():
                 digraph.node[(pnode,version)][k] = v
 
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser("DAG builder from provenance data")
-    parser.add_argument("dbdir", type=str, help="db directory")
-    parser.add_argument("--graph", dest="graph", action="store_true",
-                        help="should generate graph")
-    args = vars(parser.parse_args())
-
-    dbdir = args["dbdir"]
+def make_graph(dbdir):
     childdb = bsddb.btopen(dbdir + "/" + CHILD_DB)
     parentdb = bsddb.btopen(dbdir + "/" + PARENT_DB)
     provdb = bsddb.btopen(dbdir + "/" + PROV_DB)
@@ -272,6 +264,10 @@ if __name__ == "__main__":
     tokens = load_token_map(tnum2tokdb)
     digraph, nodes = build_graph(parentdb)
     parse_prov(provdb, tokens, nodes)
+    graph_join(digraph, nodes)
+    return digraph, nodes
+
+def print_graph(digraph, nodes):
     for pnode in nodes:
         print pnode
         for version in nodes[pnode]:
@@ -279,7 +275,21 @@ if __name__ == "__main__":
             for key in nodes[pnode][version]:
                 print colored("--->", "white", "on_red"), key, "->", nodes[pnode][version][key]
 
-    graph_join(digraph, nodes)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser("DAG builder from provenance data")
+    parser.add_argument("dbdir", type=str, help="db directory")
+    parser.add_argument("--graph", dest="graph", action="store_true",
+                        help="should generate graph")
+    parser.add_argument("--verbose", dest="verbose", action="store_true",
+                        help="verbose")
+    args = vars(parser.parse_args())
+
+    dbdir = args["dbdir"]
+    digraph, nodes = make_graph(dbdir)
+
+    verbose = args["verbose"]
+    if verbose:
+        print_graph(digraph, nodes)
 
     should_graph = args["graph"]
     if should_graph:
