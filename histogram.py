@@ -43,6 +43,18 @@ def file_in_version(dg, nodes=None):
 def file_out_version(dg, nodes=None):
     return count_edge_types(dg, nodes=nodes, dir='out', nodetype='FILE', edgetype='VERSION', nodetype2='FILE')
 
+def pipe_out_proc(dg, nodes=None):
+    return count_edge_types(dg, nodes=nodes, dir='out', nodetype='PIPE', edgetype='INPUT', nodetype2='PROC')
+
+def pipe_in_proc(dg, nodes=None):
+    return count_edge_types(dg, nodes=nodes, dir='in', nodetype='PIPE', edgetype='INPUT', nodetype2='PROC')
+
+def proc_out_pipe(dg, nodes=None):
+    return count_edge_types(dg, nodes=nodes, dir='out', nodetype='PROC', edgetype='INPUT', nodetype2='PIPE')
+
+def proc_in_pipe(dg, nodes=None):
+    return count_edge_types(dg, nodes=nodes, dir='in', nodetype='PROC', edgetype='INPUT', nodetype2='PIPE')
+
 def get_name(dg, node):
     if "NAME" not in dg.node[node]:
         return "PIPE-" + str(node)
@@ -86,8 +98,8 @@ def count_edge_types(dg, dir, nodetype, edgetype, nodetype2, nodes=None):
     return d
 
 def kde_make(counts):
-    kde = KernelDensity()
-    kde.fit(np.vstack(counts))
+    kde = KernelDensity(bandwidth=0.5)
+    kde = kde.fit(np.vstack(counts))
     return kde
 
 def kde_predict(kde, val):
@@ -106,6 +118,10 @@ functions = {
     'proc_in_proc': proc_in_proc,
     'proc_out_version': proc_out_version,
     'proc_in_version': proc_in_version,
+    'proc_out_pipe': proc_out_pipe,
+    'proc_in_pipe': proc_in_pipe,
+    'pipe_out_proc': pipe_out_proc,
+    'pipe_in_proc': pipe_in_proc,
 }
 
 def get_vals(dg, node):
