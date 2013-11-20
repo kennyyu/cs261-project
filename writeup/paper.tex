@@ -1,24 +1,24 @@
 \documentclass[10pt,twocolumn]{article}
 
 \usepackage{algorithm}
-\usepackage{moreverb}   
-\usepackage{longtable}
+%\usepackage{moreverb}   
+%\usepackage{longtable}
 \usepackage{fancyhdr}
 \usepackage{algorithmic}             
-\usepackage{algorithm}
-\usepackage{array}     
+%\usepackage{algorithm}
+%\usepackage{array}     
 \usepackage{hyperref}
 \usepackage{graphicx}
 \usepackage{subfigure}
 \usepackage{fullpage}
 \usepackage{amsmath, amssymb, amsthm}
-\usepackage[framed,numbered,autolinebreaks,useliterate]{mcode}
-\usepackage{mathabx}
+%\usepackage[framed,numbered,autolinebreaks,useliterate]{mcode}
+%\usepackage{mathabx}
 \usepackage{float}
 
 \usepackage[margin=1in]{geometry}
 
-\title{{\bf TODO: Intrusion Detection through Provenance}}
+\title{{\bf Intrusion Detection through Provenance-Based Histograms}}
 \author{
     Kenny Yu\\
     Harvard University\\
@@ -51,7 +51,7 @@ Provenance is metadata that tracks the history of all changes to files. In prove
 
 To make sense of the large amounts of data, Macko et. al. have developed Orbiter, a tool to visualize provenance graphs with semantic zoom \cite{orbiter}. Margo et. al. have developed techniques to analyze large provenance graphs and to extract useful information from these graphs, including semantic file attributes \cite{fileattributes}. Using simple provenance statistics on nodes (e.g. neighbors, file count, process count, edge count) and features from \texttt{stat}, they determine with high accuracy the type of files (e.g. source files, configuration files). Furthermore, they have identified key properties of provenance graphs and developed new centrality metrics to perform local clustering of graphs, separating the huge provenance graphs into smaller semantic tasks or workloads \cite{clustering}.
 
-Applications that require provenance collection typically place great emphasis on data integrity. Given this priority, a natural goal of provenance systems is to detect intrusions on the system. Somayaji et. al. have developed techniques for detecting intrusions based on system call sequences, and counteract these by exponentially delaying or aborting system calls, rendering the system useless for a malicious attacker \cite{somayaji}\cite{somayaji-recent}. These intrusions include exploiting vulnerabilities in the SSH daemon and sendmail to obtain a shell with root privileges.
+Applications that require provenance collection typically place great emphasis on data integrity. Given this priority, a natural goal of provenance systems is to detect intrusions on the system. Somayaji et. al. have developed techniques for detecting intrusions based on system call sequences, and counteract these by exponentially delaying or aborting system calls, rendering the system useless for a malicious attacker \cite{somayaji}\cite{somayaji-recent}. These intrusions include exploiting vulnerabilities in the SSH daemon and sendmail to obtain a shell with root privileges. Somayaji's work relies on building a {\em normal} profile of a process, and then detecting when the process deviates from normal.
 
 Given the extensive amount of data PASS collects on file-file, file-process, and process-process dependencies, it seems plausible to detect intrusions based on provenance data collected by PASS. Tariq et. al. generalize Somayaji's sequences of system calls to sequences of provenance system events \cite{correlated-anomalies} to develop an intrusion detection system (IDS) in a distributed system. Their system uses bloom filters to store hashes of $k$-tuples--representing a sequence of provenance events--and then use these bit vectors to correlate anomalies across multiple hosts. King et. al. have developed Backtrack \cite{backtrack}, a modified Linux kernel that tracks dependencies between operating system objects (files, processes, file names) in a similar fashion to PASS. Given an intrusion, Backtrack builds a backwards casual graph to determine the entry point of an intrusion, and they have extended Backtrack with forward causal graphs to determine possibly tainted files, processes, and hosts from an intrusion in a distributed system \cite{multihost}. However, their system does not find a way of detecting an intrusion. Lei et. al. build similar process-file dependency trees, which they call access trees, and define a compatibility function to compare access trees with the goal of predicting future file accesses based on the current access tree pattern \cite{fileprefetch}.
 
