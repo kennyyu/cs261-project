@@ -255,6 +255,27 @@ def centrality_opsahl(dg):
         rank[x] = r
     return rank
 
+def centrality_age(dg):
+    rank = {}
+    min_time = float("inf")
+    max_time = float("-inf")
+    for node in dg.nodes():
+        if "FREEZETIME" in dg.node[node]:
+            time = dg.node[node]["FREEZETIME"]
+            time_float = float("%d.%d" % (time["SEC"], time["NSEC"]))
+            rank[node] = time_float
+            min_time = min(min_time, time_float)
+            max_time = max(max_time, time_float)
+        else:
+            rank[node] = None
+    span_time = max_time - min_time
+    for node in dg.nodes():
+        if rank[node]:
+            rank[node] = (rank[node] - min_time) / span_time
+        else:
+            rank[node] = 0.
+    return rank
+
 def aggregate(dg, rank):
     """
     returns a dictionary mapping names -> counts

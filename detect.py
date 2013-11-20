@@ -76,6 +76,12 @@ def test_eigenvector():
 def test_opsahl():
     test_centrality(histogram.centrality_opsahl)
 
+def test_age():
+    test_centrality(histogram.centrality_age)
+
+def test_pagerank():
+    test_centrality(histogram.pagerank)
+
 if __name__ == "__main__":
     TESTS = {
         1: test1,
@@ -83,6 +89,8 @@ if __name__ == "__main__":
         3: test_ancestor,
         4: test_eigenvector,
         5: test_opsahl,
+        6: test_age,
+        7: test_pagerank,
     }
     parser = argparse.ArgumentParser("Detector")
     parser.add_argument("good", type=str, help="db directory for good")
