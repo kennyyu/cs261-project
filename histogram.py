@@ -196,17 +196,66 @@ def centrality_in_degree(dg):
     whereas our graph has edges in the other direction
     hence we actually want out degree
     """
-    return in_degree_centrality(dg)
+    return out_degree_centrality(dg)
 
 from networkx.algorithms.dag import ancestors, descendants
 
 def centrality_ancestor(dg):
     """
-    dmargo has edges swapped. in his paper, == total # of descendents
+    dmargo has edges swapped? DUNNO in his paper, == total # of descendents
 
     in our graph == total # of ancestors
     """
-    return dict((node, len(descendants(dg, node))) for node in dg.nodes())
+    V = float(len(dg.nodes()))
+    return dict((node, len(ancestors(dg, node)) / V) for node in dg.nodes())
+
+from scipy.sparse import lil_matrix
+from scipy.sparse.linalg import eigs
+
+def centrality_eigenvector(dg):
+    V = len(dg.nodes())
+    M = lil_matrix((V,V))
+
+    # index -> (pnode, version)
+    ix_to_node = dict(zip(range(V), dg.nodes()))
+    node_to_ix = dict(zip(dg.nodes(), range(V)))
+
+    # TODO: switch i and j? because of backwards edges
+    print V
+    for (u, v) in dg.edges():
+        M[node_to_ix[u],node_to_ix[v]] = 1.
+    for node in dg.nodes():
+        if len(dg[node]) == 0:
+            i = node_to_ix[node]
+            for j in range(V):
+                M[i,j] = 1. / V
+    vals, vecs = eigs(M, k=1, which='LM')
+    print vals, vecs
+    rank = {}
+    for i in range(V):
+        rank[ix_to_node[i]] = vecs[i,0]
+    return rank
+
+from networkx.algorithms.shortest_paths.unweighted import all_pairs_shortest_path_length
+
+def centrality_opsahl(dg):
+    """
+    TODO: reverse edges
+    """
+    ds = all_pairs_shortest_path_length(dg)
+    rank = {}
+    for x in dg.nodes():
+        r = 0.
+        for v in dg.nodes():
+            if x == v:
+                continue
+            if x not in ds:
+                continue
+            if v not in ds[x]:
+                continue
+            r += 1. / ds[x][v]
+        rank[x] = r
+    return rank
 
 def aggregate(dg, rank):
     """
