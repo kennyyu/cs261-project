@@ -34,13 +34,16 @@ def test1():
     for (k,v) in sorted(diffs.items()):
         print k,v
 
-def test_centrality(centrality_f):
+def test_centrality(centrality_f, reverse=False):
     dg_good, nodes_good = graph.make_graph(good)
     good_node = (2680, 0)
     name = histogram.get_name(dg_good, good_node)
 
     print ">>>>>GOOD ON GOOD"
-    rank_good = centrality_f(dg_good)
+    if reverse:
+        rank_good = centrality_f(dg_good.reverse(copy=True))
+    else:
+        rank_good = centrality_f(dg_good)
     counts_good = histogram.aggregate(dg_good, rank_good)
     kdes_good = histogram.counts_to_kdes(counts_good)
 
@@ -53,7 +56,10 @@ def test_centrality(centrality_f):
     name = histogram.get_name(dg_bad, bad_node)
 
     print ">>>>>BAD ON GOOD"
-    rank_bad = centrality_f(dg_bad)
+    if reverse:
+        rank_bad = centrality_f(dg_bad.reverse(copy=True))
+    else:
+        rank_bad = centrality_f(dg_bad)
 
     r_bad = rank_bad[bad_node]
     print bad_node, name, r_bad, histogram.kde_predict(kdes_good[name], rank_bad[bad_node])

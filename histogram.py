@@ -196,7 +196,7 @@ def centrality_in_degree(dg):
     whereas our graph has edges in the other direction
     hence we actually want out degree
     """
-    return out_degree_centrality(dg)
+    return in_degree_centrality(dg)
 
 from networkx.algorithms.dag import ancestors, descendants
 
@@ -207,7 +207,7 @@ def centrality_ancestor(dg):
     in our graph == total # of ancestors
     """
     V = float(len(dg.nodes()))
-    return dict((node, len(ancestors(dg, node)) / V) for node in dg.nodes())
+    return dict((node, len(descendants(dg, node)) / V) for node in dg.nodes())
 
 from scipy.sparse import lil_matrix
 from scipy.sparse.linalg import eigs
@@ -220,8 +220,6 @@ def centrality_eigenvector(dg):
     ix_to_node = dict(zip(range(V), dg.nodes()))
     node_to_ix = dict(zip(dg.nodes(), range(V)))
 
-    # TODO: switch i and j? because of backwards edges
-    print V
     for (u, v) in dg.edges():
         M[node_to_ix[u],node_to_ix[v]] = 1.
     for node in dg.nodes():
