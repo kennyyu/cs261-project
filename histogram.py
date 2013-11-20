@@ -180,8 +180,38 @@ def kde_predict_all(kdes, dg, node):
 
 from networkx.algorithms.link_analysis.pagerank_alg import pagerank_numpy
 
-def pagerank(dg):
-    rank = pagerank_numpy(dg)
+def centrality_pagerank(dg):
+    return pagerank_numpy(dg)
+
+from networkx.algorithms.centrality import out_degree_centrality, in_degree_centrality
+
+def centrality_in_degree(dg):
+    """
+    dmargo's paper has edges in reverse of the data flow
+    hello has inputs bar.txt and has outputs foo.txt
+    then we have edges:
+
+    bar.txt <--- hello <----foo.txt
+
+    whereas our graph has edges in the other direction
+    hence we actually want out degree
+    """
+    return in_degree_centrality(dg)
+
+from networkx.algorithms.dag import ancestors, descendants
+
+def centrality_ancestor(dg):
+    """
+    dmargo has edges swapped. in his paper, == total # of descendents
+
+    in our graph == total # of ancestors
+    """
+    return dict((node, len(descendants(dg, node))) for node in dg.nodes())
+
+def aggregate(dg, rank):
+    """
+    returns a dictionary mapping names -> counts
+    """
     d = {}
     for node in dg.nodes():
         name = get_name(dg, node)
@@ -189,3 +219,27 @@ def pagerank(dg):
             d[name] = []
         d[name].append(rank[node])
     return d
+
+def counts_to_kdes(aggs):
+    """
+    transforms counts into kernel density objects
+    """
+    kdes = {}
+    for name in aggs:
+        kdes[name] = kde_make(aggs[name])
+    return kdes
+
+
+"""
+need functions graph -> centrality for each node
+
+centrality for each node -> {name -> list of centralities}
+
+
+"""
+
+centrality = {
+    'PAGERANK' : pagerank_numpy,
+    'IN_DEGREE' : out_degree_centrality,
+}
+

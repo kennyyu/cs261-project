@@ -34,14 +34,62 @@ def test1():
     for (k,v) in sorted(diffs.items()):
         print k,v
 
+def test_in_degree():
+
+    dg_good, nodes_good = graph.make_graph(good)
+    good_node = (2680, 0)
+    name = histogram.get_name(dg_good, good_node)
+
+    print ">>>>>GOOD ON GOOD"
+    rank_good = histogram.centrality_in_degree(dg_good)
+    counts_good = histogram.aggregate(dg_good, rank_good)
+    kdes_good = histogram.counts_to_kdes(counts_good)
+
+    r_good = rank_good[good_node]
+    print good_node, name, r_good, histogram.kde_predict(kdes_good[name], rank_good[good_node])
+
+
+    dg_bad, nodes_bad = graph.make_graph(bad)
+    bad_node = (2609,0)
+    name = histogram.get_name(dg_bad, bad_node)
+
+    print ">>>>>BAD ON GOOD"
+    rank_bad = histogram.centrality_in_degree(dg_bad)
+
+    r_bad = rank_bad[bad_node]
+    print bad_node, name, r_bad, histogram.kde_predict(kdes_good[name], rank_bad[bad_node])
+
+def test_ancestor():
+
+    dg_good, nodes_good = graph.make_graph(good)
+    good_node = (2680, 0)
+    name = histogram.get_name(dg_good, good_node)
+
+    print ">>>>>GOOD ON GOOD"
+    rank_good = histogram.centrality_ancestor(dg_good)
+    counts_good = histogram.aggregate(dg_good, rank_good)
+    kdes_good = histogram.counts_to_kdes(counts_good)
+
+    r_good = rank_good[good_node]
+    print good_node, name, r_good, histogram.kde_predict(kdes_good[name], rank_good[good_node])
+
+
+    dg_bad, nodes_bad = graph.make_graph(bad)
+    bad_node = (2609,0)
+    name = histogram.get_name(dg_bad, bad_node)
+
+    print ">>>>>BAD ON GOOD"
+    rank_bad = histogram.centrality_ancestor(dg_bad)
+
+    r_bad = rank_bad[bad_node]
+    print bad_node, name, r_bad, histogram.kde_predict(kdes_good[name], rank_bad[bad_node])
 
 if __name__ == "__main__":
-    TESTS = {1: test1}
+    TESTS = {1: test1, 2: test_in_degree, 3: test_ancestor}
     parser = argparse.ArgumentParser("Detector")
     parser.add_argument("good", type=str, help="db directory for good")
     parser.add_argument("bad", type=str, help="db directory for bad")
     parser.add_argument("test", type=int, help="test to run")
-    parser.add_argument("--graph", dest="graph", action="store_true", help="graph")
     parser.add_argument("--verbose", dest="verbose", action="store_true",
                         help="verbose")
     args = vars(parser.parse_args())
