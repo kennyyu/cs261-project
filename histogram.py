@@ -156,7 +156,7 @@ def make_kdes(dg):
     for k in functions:
         for (name, counts) in functions[k](dg).items():
             try:
-                d[name][k] = kde_make(counts)
+                d[name][k] = kde_make(counts), counts
             except:
                 d[name][k] = None
     return d
@@ -173,7 +173,7 @@ def kde_predict_all(kdes, dg, node):
     d = {}
     for fname in kdes[name]:
         if kdes[name][fname]:
-            d[fname] = kde_predict(kdes[name][fname], dvals[fname])
+            d[fname] = kde_predict(kdes[name][fname][0], dvals[fname])
         else:
             d[fname] = None
     return d

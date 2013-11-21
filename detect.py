@@ -2,23 +2,39 @@ import argparse
 import graph
 import histogram
 
-good = '../data/db_hello_v1'
+good = '../data/db_hello'
+pnode_good = 2680
+version_good = 0
+
 bad = '../data/db_hello_x'
+pnode_bad = 2609
+version_bad = 0
+
 VERBOSE = False
 
 def test1():
+    node_good = (pnode_good, version_good)
+    node_bad = (pnode_bad, version_bad)
+
     dg_good, nodes_good = graph.make_graph(good)
 
     print ">>>>>GOOD ON GOOD"
     good_kdes = histogram.make_kdes(dg_good)
-    good_vals = histogram.kde_predict_all(good_kdes, dg_good, (2680,0))
+    good_vals = histogram.kde_predict_all(good_kdes, dg_good, node_good)
+
+    name = histogram.get_name(dg_good, node_good)
+    for (k,v) in sorted(good_kdes[name].items()):
+        print k, v[1] if v else v
+    print
+    print
+
     for (k,v) in sorted(good_vals.items()):
         print k,v
 
     print
     print ">>>>>BAD ON GOOD"
     dg_bad, nodes_bad = graph.make_graph(bad)
-    bad_on_good_vals = histogram.kde_predict_all(good_kdes, dg_bad, (2609,0))
+    bad_on_good_vals = histogram.kde_predict_all(good_kdes, dg_bad, node_bad)
     for (k,v) in sorted(bad_on_good_vals.items()):
         print k,v
 
@@ -35,9 +51,11 @@ def test1():
         print k,v
 
 def test_centrality(centrality_f, reverse=False):
+    node_good = (pnode_good, version_good)
+    node_bad = (pnode_bad, version_bad)
+
     dg_good, nodes_good = graph.make_graph(good)
-    good_node = (2680, 0)
-    name = histogram.get_name(dg_good, good_node)
+    name = histogram.get_name(dg_good, node_good)
 
     print ">>>>>GOOD ON GOOD"
     if reverse:
@@ -47,13 +65,12 @@ def test_centrality(centrality_f, reverse=False):
     counts_good = histogram.aggregate(dg_good, rank_good)
     kdes_good = histogram.counts_to_kdes(counts_good)
 
-    r_good = rank_good[good_node]
-    print good_node, name, r_good, histogram.kde_predict(kdes_good[name], rank_good[good_node])
+    r_good = rank_good[node_good]
+    print node_good, name, r_good, histogram.kde_predict(kdes_good[name], rank_good[node_good])
 
 
     dg_bad, nodes_bad = graph.make_graph(bad)
-    bad_node = (2609,0)
-    name = histogram.get_name(dg_bad, bad_node)
+    name = histogram.get_name(dg_bad, node_bad)
 
     print ">>>>>BAD ON GOOD"
     if reverse:
@@ -61,8 +78,8 @@ def test_centrality(centrality_f, reverse=False):
     else:
         rank_bad = centrality_f(dg_bad)
 
-    r_bad = rank_bad[bad_node]
-    print bad_node, name, r_bad, histogram.kde_predict(kdes_good[name], rank_bad[bad_node])
+    r_bad = rank_bad[node_bad]
+    print node_bad, name, r_bad, histogram.kde_predict(kdes_good[name], rank_bad[node_bad])
 
 def test_in_degree():
     test_centrality(histogram.centrality_in_degree)
@@ -84,23 +101,39 @@ def test_pagerank():
 
 if __name__ == "__main__":
     TESTS = {
-        1: test1,
-        2: test_in_degree,
-        3: test_ancestor,
-        4: test_eigenvector,
-        5: test_opsahl,
-        6: test_age,
-        7: test_pagerank,
+        "simple": test1,
+        "in_degree": test_in_degree,
+        "ancestor": test_ancestor,
+        "eigenvector": test_eigenvector,
+        "opsahl": test_opsahl,
+        "age": test_age,
+        "pagerank": test_pagerank,
     }
     parser = argparse.ArgumentParser("Detector")
-    parser.add_argument("good", type=str, help="db directory for good")
-    parser.add_argument("bad", type=str, help="db directory for bad")
-    parser.add_argument("test", type=int, help="test to run")
+    parser.add_argument("db_good", type=str, help="db directory for good")
+    parser.add_argument("pnode_good", type=int, help="pnode for good")
+    parser.add_argument("version_good", type=int, help="version for good")
+
+    parser.add_argument("db_bad", type=str, help="db directory for bad")
+    parser.add_argument("pnode_bad", type=int, help="pnode for good")
+    parser.add_argument("version_bad", type=int, help="version for bad")
+
+    parser.add_argument("test", type=str, help="test to run",
+                        choices=list(TESTS.keys()))
     parser.add_argument("--verbose", dest="verbose", action="store_true",
                         help="verbose")
+
     args = vars(parser.parse_args())
-    good = args["good"]
-    bad = args["bad"]
+    good = args["db_good"]
+    pnode_good = args["pnode_good"]
+    version_good = args["version_good"]
+
+    bad = args["db_bad"]
+    pnode_bad = args["pnode_bad"]
+    version_bad = args["version_bad"]
+
+    print args
+
     VERBOSE = args["verbose"]
     test = args["test"]
     TESTS[test]()
