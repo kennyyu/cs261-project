@@ -18,7 +18,6 @@ def test1():
 
     dg_good, nodes_good = graph.make_graph(good)
 
-    print ">>>>>GOOD ON GOOD"
     good_kdes = histogram.make_kdes(dg_good)
     good_vals = histogram.kde_predict_all(good_kdes, dg_good, node_good)
 
@@ -28,6 +27,7 @@ def test1():
     print
     print
 
+    print ">>>>>GOOD ON GOOD"
     for (k,v) in sorted(good_vals.items()):
         print k,v
 
