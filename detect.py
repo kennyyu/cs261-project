@@ -81,6 +81,10 @@ def test_centrality(centrality_f, reverse=False):
     r_bad = rank_bad[node_bad]
     print node_bad, name, r_bad, histogram.kde_predict(kdes_good[name], rank_bad[node_bad])
 
+    # REMOVE
+    print counts_good[name]
+
+
 def test_in_degree():
     test_centrality(histogram.centrality_in_degree)
 
