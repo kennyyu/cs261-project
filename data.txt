@@ -207,3 +207,9 @@ proc_out_pipe 0.0
 proc_out_proc 0.689902627776
 proc_out_version 0.0
 
+>>>>>GOOD ON GOOD
+(2680, 0) ./hello 1.5 0.425126580173
+>>>>>BAD ON GOOD
+(2609, 0) ./hello 2.83333333333 0.252296373061
+>>>>>COMPARISON
+diff (good - bad) ./hello rank diff -1.33333333333 prediction diff 0.172830207112

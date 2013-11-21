@@ -1,6 +1,7 @@
 import argparse
 import graph
 import histogram
+import numpy as np
 
 good = '../data/db_hello'
 pnode_good = 2680
@@ -23,7 +24,7 @@ def test1():
 
     name = histogram.get_name(dg_good, node_good)
     for (k,v) in sorted(good_kdes[name].items()):
-        print k, v[1] if v else v
+        print k, np.mean(v[1]) if v else v
     print
     print
 
@@ -66,6 +67,7 @@ def test_centrality(centrality_f, reverse=False):
 
     # REMOVE
     print counts_good[name]
+    print "mean", np.mean(counts_good[name])
 
     print
     print
