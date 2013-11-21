@@ -7,6 +7,8 @@ NAMING CONVENTION
 start node type, direction, edge type, other node's type
 """
 
+SHOULD_HARDCODE_GCC = False
+
 def file_out_file(dg, nodes=None):
     return count_edge_types(dg, nodes=nodes, dir='out', nodetype='FILE', edgetype='INPUT', nodetype2='FILE')
 
@@ -170,6 +172,11 @@ def kde_predict_all(kdes, dg, node):
     """
     dvals = get_vals(dg, node)
     name = get_name(dg, node)
+
+    print name, dvals
+
+    if SHOULD_HARDCODE_GCC:
+        name = '/usr/bin/gcc'
     d = {}
     for fname in kdes[name]:
         if kdes[name][fname]:

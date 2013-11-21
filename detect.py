@@ -78,6 +78,9 @@ def test_centrality(centrality_f, reverse=False):
     dg_bad, nodes_bad = graph.make_graph(bad)
     name = histogram.get_name(dg_bad, node_bad)
 
+    if histogram.SHOULD_HARDCODE_GCC:
+        name = "/usr/bin/gcc"
+
     print ">>>>>BAD ON GOOD"
     if reverse:
         rank_bad = centrality_f(dg_bad.reverse(copy=True))
@@ -133,6 +136,8 @@ if __name__ == "__main__":
                         choices=list(TESTS.keys()))
     parser.add_argument("--verbose", dest="verbose", action="store_true",
                         help="verbose")
+    parser.add_argument("--hardcode", dest="hardcode", action="store_true",
+                        help="hardcode /usr/bin/gcc")
 
     args = vars(parser.parse_args())
     good = args["db_good"]
@@ -146,6 +151,7 @@ if __name__ == "__main__":
     print args
 
     VERBOSE = args["verbose"]
+    histogram.SHOULD_HARDCODE_GCC = args["hardcode"]
     test = args["test"]
     TESTS[test]()
 
