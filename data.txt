@@ -1,0 +1,209 @@
+GCC OPSAHL
+
+>>>>>GOOD ON GOOD
+(5404, 0) /usr/bin/gcc 5.11666666667 0.153471081342
+>>>>>BAD ON GOOD
+(5181, 1) /usr/bin/gcc 7.41451352529 0.0244648526831
+>>>>>COMPARISON
+diff (good - bad) /usr/bin/gcc rank diff -2.29784685862 prediction diff 0.129006228659
+
+
+>>>>>GOOD ON GOOD
+file_in_file None
+file_in_proc None
+file_in_version None
+file_out_file None
+file_out_proc None
+file_out_version None
+pipe_in_proc None
+pipe_out_proc None
+proc_in_file 0.797884560803
+proc_in_pipe 0.797884560803
+proc_in_proc 0.452933246915
+proc_in_version 0.452933246915
+proc_out_file 0.797884560803
+proc_out_pipe 0.797884560803
+proc_out_proc 0.340837577114
+proc_out_version 0.452933246915
+
+>>>>>BAD ON GOOD
+/usr/bin/python {'file_out_proc': 0, 'proc_out_version': 0, 'proc_in_proc': 0, 'proc_in_pipe': 0, 'file_in_file': 0, 'proc_in_version': 1, 'pipe_out_proc': 0, 'file_in_version': 0, 'proc_in_file': 1, 'proc_out_proc': 0, 'file_in_proc': 0, 'proc_out_pipe': 0, 'pipe_in_proc': 0, 'file_out_file': 0, 'file_out_version': 0, 'proc_out_file': 3}
+file_in_file None
+file_in_proc None
+file_in_version None
+file_out_file None
+file_out_proc None
+file_out_version None
+pipe_in_proc None
+pipe_out_proc None
+proc_in_file 0.107981933026
+proc_in_pipe 0.797884560803
+proc_in_proc 0.452933246915
+proc_in_version 0.452933246915
+proc_out_file 1.21517656996e-08
+proc_out_pipe 0.797884560803
+proc_out_proc 0.408168873897
+proc_out_version 0.452933246915
+
+>>>>>COMPARISON
+file_in_file None
+file_in_proc None
+file_in_version None
+file_out_file None
+file_out_proc None
+file_out_version None
+pipe_in_proc None
+pipe_out_proc None
+proc_in_file 0.689902627776
+proc_in_pipe 0.0
+proc_in_proc 0.0
+proc_in_version 0.0
+proc_out_file 0.797884548651
+proc_out_pipe 0.0
+proc_out_proc -0.0673312967829
+proc_out_version 0.0
+
+
+
+
+
+
+
+MCRYPT OPSAHL
+
+>>>>>GOOD ON GOOD
+(5151, 0) /usr/bin/python 1.5 0.640913004921
+>>>>>BAD ON GOOD
+(4969, 0) /usr/bin/python 4.86666666667 5.70492849823e-11
+>>>>>COMPARISON
+diff (good - bad) /usr/bin/python rank diff -3.36666666667 prediction diff 0.640913004864
+
+
+
+>>>>>GOOD ON GOOD
+file_in_file None
+file_in_proc None
+file_in_version None
+file_out_file None
+file_out_proc None
+file_out_version None
+pipe_in_proc None
+pipe_out_proc None
+proc_in_file 0.452933246915
+proc_in_pipe 0.797884560803
+proc_in_proc 0.452933246915
+proc_in_version 0.452933246915
+proc_out_file 0.452933246915
+proc_out_pipe 0.797884560803
+proc_out_proc 0.797884560803
+proc_out_version 0.452933246915
+
+>>>>>BAD ON GOOD
+/usr/bin/python {'file_out_proc': 0, 'proc_out_version': 1, 'proc_in_proc': 1, 'proc_in_pipe': 0, 'file_in_file': 0, 'proc_in_version': 0, 'pipe_out_proc': 0, 'file_in_version': 0, 'proc_in_file': 0, 'proc_out_proc': 1, 'file_in_proc': 0, 'proc_out_pipe': 0, 'pipe_in_proc': 0, 'file_out_file': 0, 'file_out_version': 0, 'proc_out_file': 0}
+file_in_file None
+file_in_proc None
+file_in_version None
+file_out_file None
+file_out_proc None
+file_out_version None
+pipe_in_proc None
+pipe_out_proc None
+proc_in_file 0.452933246915
+proc_in_pipe 0.797884560803
+proc_in_proc 0.452933246915
+proc_in_version 0.452933246915
+proc_out_file 0.452933246915
+proc_out_pipe 0.797884560803
+proc_out_proc 0.107981933026
+proc_out_version 0.452933246915
+
+>>>>>COMPARISON
+file_in_file None
+file_in_proc None
+file_in_version None
+file_out_file None
+file_out_proc None
+file_out_version None
+pipe_in_proc None
+pipe_out_proc None
+proc_in_file 0.0
+proc_in_pipe 0.0
+proc_in_proc 0.0
+proc_in_version 0.0
+proc_out_file 0.0
+proc_out_pipe 0.0
+proc_out_proc 0.689902627776
+proc_out_version 0.0
+
+
+
+HELLO
+
+{'db_bad': '../data/db_hello_x', 'verbose': False, 'version_good': 0, 'pnode_bad': 2609, 'hardcode': False, 'db_good': '../data/db_hello', 'pnode_good': 2680, 'version_bad': 0, 'test': 'opsahl'}
+[1.0, 2.45, 1.5, 1.0, 1.0, 2.283333333333333, 2.45, 1.5, 1.0, 2.283333333333333, 1.0, 2.45, 1.0, 1.5, 1.5, 1.5, 2.45, 2.283333333333333, 2.45, 1.0, 2.283333333333333, 1.5, 1.5, 1.5, 1.8333333333333333, 1.5, 1.0, 1.0, 2.45, 1.0, 2.283333333333333, 2.283333333333333, 1.0, 2.283333333333333, 2.283333333333333, 1.5, 1.0, 1.5, 2.283333333333333, 2.45, 1.0, 2.4499999999999997, 2.45, 1.5, 2.283333333333333, 1.0, 2.45, 2.45, 2.283333333333333, 1.5, 1.0, 1.5, 1.0, 1.5, 2.283333333333333, 2.2833333333333337, 2.283333333333333, 2.45, 2.283333333333333, 1.0, 2.45, 2.4499999999999997, 1.5, 2.283333333333333, 1.0, 2.45, 1.5, 2.45, 2.283333333333333, 1.5, 1.0, 2.45, 1.5, 2.45, 1.5, 2.283333333333333, 1.0, 2.45, 1.5, 2.283333333333333]
+
+
+>>>>>GOOD ON GOOD
+(2680, 0) ./hello 1.5 0.425126580173
+>>>>>BAD ON GOOD
+(2609, 0) ./hello 2.83333333333 0.252296373061
+>>>>>COMPARISON
+diff (good - bad) ./hello rank diff -1.33333333333 prediction diff 0.172830207112
+
+
+
+>>>>>GOOD ON GOOD
+file_in_file None
+file_in_proc None
+file_in_version None
+file_out_file None
+file_out_proc None
+file_out_version None
+pipe_in_proc None
+pipe_out_proc None
+proc_in_file 0.452933246915
+proc_in_pipe 0.616785121012
+proc_in_proc 0.452933246915
+proc_in_version 0.452933246915
+proc_out_file 0.452933246915
+proc_out_pipe 0.797884560803
+proc_out_proc 0.797884560803
+proc_out_version 0.452933246915
+
+>>>>>BAD ON GOOD
+./hello {'file_out_proc': 0, 'proc_out_version': 1, 'proc_in_proc': 1, 'proc_in_pipe': 0, 'file_in_file': 0, 'proc_in_version': 0, 'pipe_out_proc': 0, 'file_in_version': 0, 'proc_in_file': 0, 'proc_out_proc': 1, 'file_in_proc': 0, 'proc_out_pipe': 0, 'pipe_in_proc': 0, 'file_out_file': 0, 'file_out_version': 0, 'proc_out_file': 0}
+file_in_file None
+file_in_proc None
+file_in_version None
+file_out_file None
+file_out_proc None
+file_out_version None
+pipe_in_proc None
+pipe_out_proc None
+proc_in_file 0.452933246915
+proc_in_pipe 0.616785121012
+proc_in_proc 0.452933246915
+proc_in_version 0.452933246915
+proc_out_file 0.452933246915
+proc_out_pipe 0.797884560803
+proc_out_proc 0.107981933026
+proc_out_version 0.452933246915
+
+>>>>>COMPARISON
+file_in_file None
+file_in_proc None
+file_in_version None
+file_out_file None
+file_out_proc None
+file_out_version None
+pipe_in_proc None
+pipe_out_proc None
+proc_in_file 0.0
+proc_in_pipe 0.0
+proc_in_proc 0.0
+proc_in_version 0.0
+proc_out_file 0.0
+proc_out_pipe 0.0
+proc_out_proc 0.689902627776
+proc_out_version 0.0
+
