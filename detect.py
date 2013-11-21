@@ -57,7 +57,6 @@ def test_centrality(centrality_f, reverse=False):
     dg_good, nodes_good = graph.make_graph(good)
     name = histogram.get_name(dg_good, node_good)
 
-    print ">>>>>GOOD ON GOOD"
     if reverse:
         rank_good = centrality_f(dg_good.reverse(copy=True))
     else:
@@ -65,8 +64,15 @@ def test_centrality(centrality_f, reverse=False):
     counts_good = histogram.aggregate(dg_good, rank_good)
     kdes_good = histogram.counts_to_kdes(counts_good)
 
+    # REMOVE
+    print counts_good[name]
+
+    print
+    print
+    print ">>>>>GOOD ON GOOD"
     r_good = rank_good[node_good]
-    print node_good, name, r_good, histogram.kde_predict(kdes_good[name], rank_good[node_good])
+    pre_good = histogram.kde_predict(kdes_good[name], rank_good[node_good])
+    print node_good, name, r_good, pre_good
 
 
     dg_bad, nodes_bad = graph.make_graph(bad)
@@ -79,10 +85,11 @@ def test_centrality(centrality_f, reverse=False):
         rank_bad = centrality_f(dg_bad)
 
     r_bad = rank_bad[node_bad]
-    print node_bad, name, r_bad, histogram.kde_predict(kdes_good[name], rank_bad[node_bad])
+    pre_bad = histogram.kde_predict(kdes_good[name], rank_bad[node_bad])
+    print node_bad, name, r_bad, pre_bad
 
-    # REMOVE
-    print counts_good[name]
+    print ">>>>>COMPARISON"
+    print "diff (good - bad)", name, "rank diff", r_good - r_bad, "prediction diff", pre_good - pre_bad
 
 
 def test_in_degree():
