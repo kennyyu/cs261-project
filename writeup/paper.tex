@@ -124,6 +124,27 @@ After running the normal and exploited programs described above, we visualized t
 \end{figure*}
 
 \subsection{Statistical Data}
+Table 1 summarizes some of the preliminary results we have generated. Here we have included, for each statistic and test, the average over the "normal" nodes, the observed value for the "test" node, and the KDE probability output for that value. We have chosen four metrics that provided a statistically significant result. The other statistics failed to be as powerful (see Table 2 XXX).
+% from http://hhh123.wordpress.com/2008/08/13/latex-table-across-two-columns/
+\begin{center}
+\begin{table*}[ht]
+{\small
+  \begin{tabular}{| l | l | l | l |}
+    \hline
+    metric & hello & mcrypt & gcc \\ \hline
+     \# forked processes & 0.0 | 1 | 0.108 & 0.0 | 1 | 0.107 & 0.9 | 9 | 0.408 \\ \hline
+     \# input files & 0.5 | 0 | 0.453 & 0.5 | 0 | 0.453 & 0.5 | 1 | 0.107 \\ \hline
+     \# ouptut files & 0.5 | 1 | 0.453 & 0.5 | 1 | 0.453 & 0.0 | 3 | 0.000 \\ \hline
+    Opsahl centrality & 1.791 | 2.83 | 0.252 & 1.250 | 4.867 | 0.000 & 2.793 | 7.415 | 0.024 \\
+    \hline
+  \end{tabular}
+}
+\hfill{}
+\caption{average over good | test node value | kde(test node is normal)
+}
+\label{tb:tablename}
+\end{table*}
+\end{center}
 \subsection{KDE Predictions}
 TODO:
 true positives.
