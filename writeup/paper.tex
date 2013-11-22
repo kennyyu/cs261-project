@@ -153,18 +153,24 @@ Table 1 summarizes some of the preliminary results we have generated. Here we ha
 \end{center}
 
 \subsection{Discussion}
-TODO: 
-why the numbers are the way they are.
-what types of intrusions can we detect.
-which provenance data is most useful
+\subsection{Successes}
+We were able to accurately identify our three exploited programs. Because each was a slightly different exploit, the data on which they deviated differed, but each did have metrics which flagged them as non-normal. 
+\subsection{Useful Data for Intrusion Detection}
+We set out to identify both buffer overflows (i.e. arbitrary code execution) and modified binaries. The buffer overflows were best detected by the number of outgoing processes and the centrality measures. This makes sense, as arbitrary code execution will generate additional processes. The centrality measures are also very sensitive to the addition of nodes, and additional processes add both a new process node, as well as new nodes for the data touched by the new process. The more active the exploit is (say, if it forks a user shell), the more the centrality measure will be impacted, and the more likely it is that the exploit will be caught by our model.
 
+If the exploit does directly not generate additional files, however, statistics like "number of output files" will fail to be statistically significant. Indeed, the two programs (hello and mcrypt) that did not generate additional files were not flagged by that measure. On the other hand, the GCC that was modified to generate log files was quickly caught by this measure, as it generated many more files than a normal GCC process. 
+
+\subsection{Confusing Data Patterns}
+At first, some of the data we collected seemed wrong. Why, for instance, does GCC seem to normally output zero files? Upon further inspection, we found that GCC forks processes for the linker/assembler that handles generating output, so GCC does not directly have output files. Similarly, when running a python script, the code file itself is not directly executed, it is read in by a python process, which then goes off and collects input, generates output, and forks additional processes. Thus, when running a python file, the file itself only has one node in the provenance graph, with many python process nodes accessing it. To run our analyses, we needed to manually identify this connection, and compute statistics for the python process, instead of the single code file node.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CONCLUSION
 %
 
 \section{Future Work}
 \subsection{N-depth Statistics}
-Currently, the statistics and counts we generate apply only to the test node itself. We found that certain programs did have the counts we would expect. GCC, for instance, forks processes for the linker/assembler that handles generating output, so GCC does not directly have output files. In order to account for these sorts of actions, we could calculate the relevant statistics for the test node and all nodes at distance $N$ from the test node, and then aggregate them. We could experiment with aggregation techniques to determine how best to incorporate this information. Perhaps it is best to simply sum all neighbor statistics together, or perhaps this information calls for a separate histogram and model. By utilizing information about neighboring nodes, we would hope to see an increase in accuracy and the ability to detect less blatant intrusions.
+Currently, the statistics and counts we generate apply only to the test node itself. As mentioned above, some processes fork helper processes that take in input or generate output, which would be useful information to collect. In order to account for these sorts of actions, we could calculate the relevant statistics for the test node and all nodes at distance $N$ from the test node, and then aggregate them. We could experiment with aggregation techniques to determine how best to incorporate this information. Perhaps it is best to simply sum all neighbor statistics together, or perhaps this information calls for a separate histogram and model. By utilizing information about neighboring nodes, we would hope to see an increase in accuracy and the ability to detect less blatant intrusions.
+
+Additionally, by using this approach, we could avoid the manual process identification mentioned above. On python files, for instance, N-depth statistics would compute statistics for the python process, which is always a direct neighbor of the code file we initially cared about.
 \subsection{Histograms by Name}
 Currently, our system compute statistics based on node type, but not node name. For instance, When we compute the outgoing (i.e. "forked") processes, we simply count them. Thus, if a program normally forks something benign, like say "cp", but an exploited version forks "rm", the raw counts may not reveal this (a call to "/bin/sh", however, should impact the centrality measures). One direction to attempt to rectify this problem lies in generating more specific histograms. Instead of having a model for "number of processes forked", we could generate one model per type of process forked, e.g. "number of 'cp' processes forked". This more specific data might enable us to catch intrusions in larger programs that already modify a lot of files and fork a lot of processes.
 \subsection{ENV and ARGV}
