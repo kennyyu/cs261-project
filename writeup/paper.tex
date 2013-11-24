@@ -14,6 +14,7 @@
 \usepackage{amsmath, amssymb, amsthm}
 %\usepackage[framed,numbered,autolinebreaks,useliterate]{mcode}
 %\usepackage{mathabx}
+
 \usepackage{float}
 
 \usepackage[margin=1in]{geometry}
@@ -74,7 +75,7 @@ The PASS system automatically creates and updates provenance data for every file
 
 There are two versions of PASS. We conducted our experiments only with PASSv2; thus in this paper ``PASS" to refer to PASSv2.
 
-TODO: The PASS system runs with minimal time overhead, and a reasonable space overhead (XXX cite real numbers).
+% TODO: The PASS system runs with minimal time overhead, and a reasonable space overhead (XXX cite real numbers).
 
 \begin{table}[htdp]
 \begin{center}
@@ -191,8 +192,9 @@ We each metric, we computed the centrality of all the nodes and aggregated the c
 We used Orbiter \cite{orbiter} to visualize and examine the provenance graphs. We wrote Python scripts to (1) parse the raw BerkeleyDB database files storing the PASS data (2) build the provenance graphs (3) collect the counts for each statistic (which include running the centrality calculations), and (4) optionally outputting the histograms and kernel density estimations for a node of interest in a second provenance graph.
 
 \subsection{Examples}
-In Figure 1, we see a few examples of a generated histogram and KDE model. The green bars represent the histogram for the particular statistic, and the blue curve is the KDE. Finally, the red line is the value for a ``test" node. In this case, the test node appears to be a possible exploit, because it intersects the KDE at low values. 
+In Figure \ref{kde-example}, we see a few examples of a generated histogram and KDE model. The green bars represent the histogram for the particular statistic, and the blue curve is the KDE. Finally, the red line is the value for a ``test" node. In this case, the test node appears to be a possible exploit, because it intersects the KDE at low values. 
 \begin{figure*}
+  \label{kde-example}
   \caption{Example histograms of a centrality measure and process statistic for the \texttt{gcc} exploit, with the associated KDE. The green bars represent the raw histogram counts, the blue curve represents the kernel density function, and the red vertical line represents the estimation of a node of interest.}
   \centering
     \includegraphics[width=\textwidth]{img/hist.png}
@@ -206,92 +208,121 @@ In Figure 1, we see a few examples of a generated histogram and KDE model. The g
 \section{Evaluation}
 
 \subsection{Evaluation Methodology}
-In order to test our techniques, we needed to run “exploits” on our PASS-enabled machine. We looked to prior work to get a sense of the different types of techniques commonly used to exploit security vulnerabilities. Commonly, remote network techniques (as seen in Backtracker \cite{backtracker}) are used to broach insecure systems. Metasploit \cite{metasploit} is a software package designed to facilitate running exploits on insecure system. Searching the Metasploit database, as well as the online Exploit Database \cite{exploitdb}, we found that most successful techniques involve exploiting vulnerabilities in software that a target system is running, as opposed to vulnerabilities in the target system itself. Put another way, we sought to exploit software packages, like mcrypt and gcc, not the Linux kernel itself. 
+In order to test our techniques, we needed to run exploits on our PASS-enabled machine. We looked to prior work to get a sense of the different types of techniques commonly used to exploit security vulnerabilities. Commonly, remote network techniques (as seen in Backtracker \cite{backtracker}) are used to breach insecure systems. Metasploit \cite{metasploit} is a software package designed to facilitate running exploits on insecure system. Searching the Metasploit database, as well as the online Exploit Database \cite{exploitdb}, we found that most successful techniques involve exploiting vulnerabilities in software that a target system is running, as opposed to vulnerabilities in the target system itself. Put another way, we sought to exploit software packages, like mcrypt and gcc, not the Linux kernel itself. 
 
-We found that many of the popular exploits involved buffer overflows and arbitrary code execution. Programming bugs in a piece of software allowed a malicious user, sending well-crafted data, to run arbitrary code on the target system. In particular, the mcrypt encryption package had a long standing buffer overflow, which would allow a malicious user to run their own code when mcrypt tried to decrypt the crafted exploit file. Due to limitations in our Virtual Machine set up, we were unable to exploit the vulnerable version of mcrypt, much like the authors of Backtracker \cite{backtracker} found. To emulate this exploit, we designed our own program, which would decrypt (via ROT13) an input file. When sent a particular “exploit file” which contained malicious lines, our program would stop decrypting and start running the code specified in the file.
+To generate the provenance data necessary to run the analyses, we needed to run both good and exploited versions of our programs.
 
-Another type of exploit is more reminiscent of a system administration failure. If a malicious user replaces a program in /usr/bin, it could be used to log user actions. To emulate this sort of attack, we replaced /usr/bin/gcc with our own version of gcc, which, in addition to compiling the user’s code (via a call to gcc), logs that the user has made a request and copies the files the user had tried to compile. 
+\subsubsection{hello}
+We found that many of the popular exploits involved buffer overflows and arbitrary code execution. Programming bugs in a piece of software allowed a malicious user, sending well-crafted data, to run arbitrary code on the target system. We created a simple \texttt{hello} program that echos standard in to standard out, and we gave it a buffer overflow vulnerability that allows a malicious user to fork a process. 
 
-To generate the provenance data necessary to run the above analyses, we needed to run both “good” and “exploited” versions of our programs. For the mcrypt example, we ran our program on over 200 “good” inputs, and stored the provenance data. We then ran our program on two “bad” inputs, first to call “ls” as a Proof of Concept, and again to call “/bin/sh” to demonstrate that more severe attacks can be performed. We again exported the provenance generated by these steps, for comparison with our “good” usage. This is similar to recording all uses of a program during a server’s lifetime. 
+We ran \texttt{hello} normally 40 times on various inputs and collected the provenance times. We then exploited the buffer overflow vulnerability in \texttt{hello} to spawn an \texttt{ls} process, and saved the standard out of that process to a file. See Figure \ref{hello-orbiter} for provenance graphs displaying normal and exploited behavior of \texttt{hello}.
 
-For our system administration attack, we compiled the PASS toolset using GCC, and exported the provenance from these runs. We then replaced GCC with our exploited version, and compiled a few files, and exported the provenance again. In this way, we again acquired provenance for “normal” usage, before acquiring provenance for our attempted exploit. 
+\subsubsection{mcrypt}
+The mcrypt encryption package had a long standing buffer overflow, which would allow a malicious user to run their own code when mcrypt tried to decrypt the crafted exploit file. Due to limitations in our Virtual Machine set up, we were unable to exploit the vulnerable version of mcrypt, much like the authors of Backtracker \cite{backtracker} found. To emulate this exploit, we designed a Python program, which would decrypt (via ROT13) an input file. When sent a particular exploit file� which contained malicious lines, our program would stop decrypting and start running the code specified in the file.
 
-\subsection{Selecting Metrics}
-Because we had no prior intuition into what the provenance data would actually look like, we approached selecting metrics from an objective, data-based standpoint. We wanted to use metrics that had variation over our workload, so as not to minimize the introduction of workload dependent data. Towards this end, we graphed all of the metrics over the "normal" provenance data, to see where there were trends and variation. Our results for GCC are in Figures 2 and 3. We can see that proc\_out\_proc (outgoing processes) and the ancestor and opsahl centrality metrics have more variation, and will be less likely to introduce biases. As we include more data (as discussed in Future Works), these sorts of graphs will become increasingly important in selecting good metrics for evaluation.
-\begin{figure}
-  \caption{Histograms over all "simple" provenance statistics for GCC}
-  \centering
-    \includegraphics[width=0.5\textwidth]{img/gcc_stats.png}
-\end{figure}
-\begin{figure}
-  \caption{Histograms over all centrality metrics for GCC}
-  \centering
-    \includegraphics[width=0.5\textwidth]{img/gcc_cent_stats.png}
-\end{figure}
+We ran our program on over 200 good inputs, and stored the provenance data. We then ran our program on two bad inputs, first to call \texttt{ls} as a Proof of Concept, and again to call \texttt{/bin/sh} to demonstrate that more severe attacks can be performed. We again exported the provenance generated by these steps, for comparison with our good usage. This is similar to recording all uses of a program during a server's lifetime. See Figure \ref{mcrypt-orbiter} displaying normal and exploited behavior for our version of mcrypt.
 
+\subsubsection{gcc}
+Another type of exploit is more reminiscent of a system administration failure. If a malicious user replaces a program in \texttt{/usr/bin}, it could be used to log user actions. To emulate this sort of attack, we replaced \texttt{/usr/bin/gcc} with our own version of gcc, which, in addition to compiling the user's code (via a call to gcc), logs that the user has made a request and copies the files the user had tried to compile. 
 
-\subsection{Results}
-\subsection{Provenance Data}
-After running the normal and exploited programs described above, we visualized the provenance graphs using Orbiter \cite{orbiter}. After searching for the nodes named after our programs, we were able to find both the clean and exploited nodes. The clean nodes for "hello" simply read in one file through a pipe and outputted one file, whereas the exploited version clearly has a forked "/usr/bin/ls" process. Similarly, the mcrypt simulation (implemented in Python) has only an output file as a descendent normally, but when exploited has multiple extra processes/files as descendents (see Figure 4). Similarly, the normal GCC and exploited GCC displayed very different provenance graphs. 
+For our system administration attack, we compiled the PASS toolset using GCC, and exported the provenance from these runs. We then replaced GCC with our exploited version, compiled the toolset several times with different configurations, and exported the provenance again. In this way, we collected provenance for normal usage and from our exploited usage.
 \begin{figure*}
-  \caption{Descendents of an unexploited mcrypt-style program. Simply an output file. Below, descendents of an exploited mcrypt-style program. In addition to an (offscreen) output file, there is also an outgoing /bin/sh process, with its own children.}
+  \label{hello-orbiter}
+  \caption{Descendants of a \texttt{hello} program. The top image shows multiple invocations of a \texttt{hello} behaving normally when invoked with \texttt{cat foo.txt | ./hello > c.txt}. The bottom image shows \texttt{hello} being exploited to fork an \texttt{ls} process.} 
+  \centering
+    \includegraphics[width=\textwidth]{img/hello.png}
+\end{figure*}
+\begin{figure*}
+  \label{mcrypt-orbiter}
+  \caption{Descendants of an unexploited mcrypt-style program. Simply an output file. Below, descandents of an exploited mcrypt-style program. In addition to an (offscreen) output file, there is also an outgoing \texttt{/bin/sh} process, with its own children.}
   \centering
     \includegraphics[width=\textwidth]{img/mcrypt.png}
 \end{figure*}
 
+\subsection{Selecting Metrics}
+Because we had no prior intuition into what the histograms on provenance data would actually look like, we approached selecting statistics from an objective, data-based standpoint. We wanted to use statistics that had variation over our workload to minimize the dependency of our statistics on the workload data. Towards this end, we graphed all of the statistics over the ``normal" provenance data, to see where there were trends and variation. Our results for GCC are in Figures \ref{simple-gcc} and \ref{centrality-gcc}. We can see that proc\_out\_proc (outgoing processes), the ancestor centrality, and Opsahl Closness Centrality statistics have more variation, whereas the other statistics were unimodal or bimodal (0 or 1). 
+
+The unimodal and bimodal statistics would not generate useful kernel density estimates, as they would predict roughly 0.5 for either a 0 or 1 count, giving us no information about whether the node in question is behaving normally.  On the other hand, the statistics with more variation in data would actually provide more useful information when determining normalcy in new test nodes. As we include more data (as discussed in Future Work), these sorts of graphs will become increasingly important in selecting good statistics for evaluation.
+\begin{figure*}
+  \label{simple-gcc}
+  \caption{Histograms over all "simple" provenance statistics for GCC}
+  \centering
+    \includegraphics[width=0.7\textwidth]{img/gcc_stats.png}
+\end{figure*}
+\begin{figure*}
+  \label{centrality-gcc}
+  \caption{Histograms over all centrality metrics for GCC}
+  \centering
+    \includegraphics[width=0.7\textwidth]{img/gcc_cent_stats.png}
+\end{figure*}
+
+
+\subsection{Results}
+\subsection{Provenance Data}
+After running the normal and exploited programs described above, we visualized the provenance graphs using Orbiter \cite{orbiter}. After searching for the nodes named after our programs, we were able to find both the clean and exploited nodes. The clean nodes for ``hello" simply read in one file through a pipe and outputted one file, whereas the exploited version clearly has a forked \texttt{/usr/bin/ls} process. Similarly, the mcrypt simulation (implemented in Python) has only an output file as a descendent normally, but when exploited has multiple extra processes/files as descendants (see Figure \ref{hello-orbiter} and Figure \ref{mcrypt-orbiter}). Similarly, the normal GCC and exploited GCC displayed very different provenance graphs, but they were too big to fit legibly on a page.
+
+
 \subsection{Statistical Data and KDE Predictions}
-Table 1 summarizes some of the preliminary results we have generated. Here we have included, for each statistic and test, the average over the "normal" nodes, the observed value for the "test" node, and the KDE probability output for that value. We have chosen four metrics that provided a statistically significant result.
+Table \ref{results} summarizes some of the preliminary results we have generated. Here we have included, for each statistic and test, the average over the "normal" nodes, the observed value for the "test" node, and the KDE probability output for that value. We have chosen four metrics that provided a statistically significant result. 
 % The other statistics failed to be as powerful (see Table 2 XXX).
 % from http://hhh123.wordpress.com/2008/08/13/latex-table-across-two-columns/
-\begin{center}
+% TODO: include difference/ratio from normal?
 \begin{table*}[ht]
+\label{results}
 {\small
+  \begin{center}
   \begin{tabular}{| l | l | l | l |}
     \hline
     metric & hello & mcrypt & gcc \\ \hline
-     \# forked processes & 0.0 | 1 | 0.108 & 0.0 | 1 | 0.107 & 0.9 | 9 | 0.408 \\ \hline
+     \# forked processes & 0.0 | 1 | 0.108 & 0.0 | 1 | 0.107 & 0.9 | 0 | 0.408 \\ \hline
      \# input files & 0.5 | 0 | 0.453 & 0.5 | 0 | 0.453 & 0.5 | 1 | 0.107 \\ \hline
      \# ouptut files & 0.5 | 1 | 0.453 & 0.5 | 1 | 0.453 & 0.0 | 3 | 0.000 \\ \hline
     Opsahl centrality & 1.791 | 2.83 | 0.252 & 1.250 | 4.867 | 0.000 & 2.793 | 7.415 | 0.024 \\
     \hline
   \end{tabular}
+  \end{center}
 }
 \hfill{}
-\caption{average over good | test node value | kde(test node is normal)
+\caption{average over good | test node value | kernel density estimate of test node being ``normal"
 }
 \label{tb:tablename}
 \end{table*}
-\end{center}
 
 \subsection{Discussion}
 \subsection{Successes}
-We were able to accurately identify our three exploited programs. Because each was a slightly different exploit, the data on which they deviated differed, but each did have metrics which flagged them as non-normal. 
-\subsection{Useful Data for Intrusion Detection}
-We set out to identify both buffer overflows (i.e. arbitrary code execution) and modified binaries. The buffer overflows were best detected by the number of outgoing processes and the centrality measures. This makes sense, as arbitrary code execution will generate additional processes. The centrality measures are also very sensitive to the addition of nodes, and additional processes add both a new process node, as well as new nodes for the data touched by the new process. The more active the exploit is (say, if it forks a user shell), the more the centrality measure will be impacted, and the more likely it is that the exploit will be caught by our model.
+We were able to accurately identify our three exploited programs. Each was a slightly different exploit, but each exploit deviated enough on some metrics which flagged them as non-normal. 
 
-If the exploit does directly not generate additional files, however, statistics like "number of output files" will fail to be statistically significant. Indeed, the two programs (hello and mcrypt) that did not generate additional files were not flagged by that measure. On the other hand, the GCC that was modified to generate log files was quickly caught by this measure, as it generated many more files than a normal GCC process. 
+\subsection{Useful Data for Intrusion Detection}
+We set out to identify both buffer overflows (i.e. arbitrary code execution) and modified binaries. The buffer overflows were best detected by the number of outgoing processes and the centrality measures. This makes sense, as arbitrary code execution will generate additional processes. Of the centrality metrics we implemented, the Opsahl Centrality metric did the best in distinguishing an exploited node from normally behaving nodes. Because the Opsahl Centrality metric accounts for the number of edges between a node and all of its descendants, this centrality metric is very sensitive to the addition of nodes. Exploits that have additional outputs (e.g. new processes and output files through a remote shell), thus generate a higher Opsahl centrality metric for the offending node. The more active the exploit is (say, if it forks a user shell), the more the centrality measure will be impacted, and the more likely it is that the exploit will be caught by our model.
+
+If the exploit does directly not generate additional files, however, statistics like "number of output files" will fail to be statistically significant. Indeed, the two programs (hello and mcrypt) that did not generate additional files were not flagged by that measure. On the other hand, the GCC that was modified to generate log files was caught by this measure, as it generated many more files than a normal GCC process. 
 
 \subsection{Confusing Data Patterns}
 At first, some of the data we collected seemed wrong. Why, for instance, does GCC seem to normally output zero files? Upon further inspection, we found that GCC forks processes for the linker/assembler that handles generating output, so GCC does not directly have output files. Similarly, when running a python script, the code file itself is not directly executed, it is read in by a python process, which then goes off and collects input, generates output, and forks additional processes. Thus, when running a python file, the file itself only has one node in the provenance graph, with many python process nodes accessing it. To run our analyses, we needed to manually identify this connection, and compute statistics for the python process, instead of the single code file node.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CONCLUSION
 %
 
 \section{Future Work}
 \subsection{N-depth Statistics}
-Currently, the statistics and counts we generate apply only to the test node itself. As mentioned above, some processes fork helper processes that take in input or generate output, which would be useful information to collect. In order to account for these sorts of actions, we could calculate the relevant statistics for the test node and all nodes at distance $N$ from the test node, and then aggregate them. We could experiment with aggregation techniques to determine how best to incorporate this information. Perhaps it is best to simply sum all neighbor statistics together, or perhaps this information calls for a separate histogram and model. By utilizing information about neighboring nodes, we would hope to see an increase in accuracy and the ability to detect less blatant intrusions.
+Currently, the statistics and counts we generate apply only to the test node itself. As mentioned above, some processes fork helper processes that take in input or generate output, which would be useful information to collect. In order to account for these sorts of actions, we could calculate the relevant statistics for the test node and all nodes at distance $N$ from the test node, and then aggregate them. We could experiment with aggregation techniques to determine how best to incorporate this information. Perhaps it is best to simply sum all neighbor statistics together, or perhaps this information calls for new histogram and model. By utilizing information about neighboring nodes, we hope to see an increase in accuracy and the ability to detect less blatant intrusions.
 
 Additionally, by using this approach, we could avoid the manual process identification mentioned above. On python files, for instance, N-depth statistics would compute statistics for the python process, which is always a direct neighbor of the code file we initially cared about.
+
+\subsection{Other Centrality Metrics}
+Progressive Pagerank
+
 \subsection{Histograms by Name}
-Currently, our system compute statistics based on node type, but not node name. For instance, When we compute the outgoing (i.e. "forked") processes, we simply count them. Thus, if a program normally forks something benign, like say "cp", but an exploited version forks "rm", the raw counts may not reveal this (a call to "/bin/sh", however, should impact the centrality measures). One direction to attempt to rectify this problem lies in generating more specific histograms. Instead of having a model for "number of processes forked", we could generate one model per type of process forked, e.g. "number of 'cp' processes forked". This more specific data might enable us to catch intrusions in larger programs that already modify a lot of files and fork a lot of processes.
+Currently, our system compute statistics based on node type, but not node name. For instance, When we compute the outgoing (i.e. "forked") processes, we simply count them. Thus, if a program normally forks something benign, like say "cp", but an exploited version forks "rm", the raw counts may not reveal this (a call to \texttt{/bin/sh}, however, should impact the centrality measures). One direction to attempt to rectify this problem lies in generating more specific histograms. Instead of having a model for "number of processes forked", we could generate one model per type of process forked, e.g. "number of 'cp' processes forked". This more specific data might enable us to catch intrusions in larger programs that already modify a lot of files and fork a lot of processes.
 \subsection{ENV and ARGV}
-Currently we ignore the environment and argument information stored in the provenance graph. By generating histograms based on this information, we could catch subtler intrustions/exploits that rely on modified environment information. Additionally, if an exploit relies on particular argument or argument patterns, this information might reflected in the ARGV information.
+Currently we ignore the environment and argument information stored in the provenance graph. By generating histograms based on this information, we could catch subtler intrustions/exploits that rely on modified environment information. Additionally, if an exploit relies on a particular argument or argument patterns, this information might reflected in the ARGV information.
 \subsection{Parameters}
 Currently, constructing the kernel density estimates requires a few parameter decisions - namely the number/size of the bins for our histograms, as well as the bandwidth parameter for construction the KDE. We, for the purposes of this experiment, modified these parameters manually until they described the data well, but we could computer optimal values programmatically, or test out multiple values. Additionally, we demonstrated that odd behavior has a "low" KDE, but we did not define what "low" means. For this system to be deployed more widely, we will need to define or compute what thresholds signify a potential intrusion or exploit.
 \subsection{Online Intrusion Detection}
-Currently, this system runs after-the-fact. We can identify intrusions that occurred on a machine by analyzing the data after it has been lifted from the target machine. Because PASS collect data in real time, however, our approach can be modified to implement online intrusion detection. To acheive this goal, we would need to only use metrics that can be updated without recomputing the entire statistic. In particular, some of the centrality measures do not meet this criterion. We would also need to add additional daemons (or modify the existing PASS daemons) to run the appropriate statistic gathering and model generating code. 
+Currently, this system runs after-the-fact. We can identify intrusions that occurred on a machine by analyzing the data after it has been lifted from the target machine. Because PASS collect data in real time, however, our approach can be modified to implement online intrusion detection. To achieve this goal, we would need to only use metrics that can be updated without recomputing the entire statistic. In particular, some of the centrality measures do not meet this criterion. We would also need to add additional daemons (or modify the existing PASS daemons) to run the appropriate statistic gathering and model generating code. 
 \section{Conclusion}
-We have demonstrated that provenance data (in this case, data generated by PASS) can be used to identify anomolies in program behavior, which often signal a security intrusion or exploit. Using provenance-based histograms, we can contruct models of the regular usage patterns for a particular program. When the intrusion or exploit results in behavior deviating from these models, its provenance allows us to flag it as a potential intrusion. Replaced binaries that acted significantly differently were especially easy to detect. Histograms on simple provenance statistics are good for identifying simple anomalies, but more complex statistics (see future work) may enable us to detect subtler intrusions.
+We have demonstrated that provenance data (in this case, data generated by PASS) can be used to identify anomalies in program behavior, which often signal a security intrusion or exploit. Using provenance-based histograms, we can construct models of the regular usage patterns for a particular program. When the intrusion or exploit results in behavior deviating from these models, its provenance allows us to flag it as a potential intrusion. Replaced binaries that acted significantly differently were especially easy to detect. Histograms on simple provenance statistics are good for identifying simple anomalies, but more complex statistics (see future work) may enable us to detect subtler intrusions.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % BIBLIOGRAPHY
@@ -329,17 +360,18 @@ We have demonstrated that provenance data (in this case, data generated by PASS)
 \bibitem{pass}
 \textsc{Muniswamy-Reddy, K., Holland, D. A., Braun, U., and Seltzer, M.} Provenance-Aware Storage Systems. In {\em Proceedings of the 2006 USENIX Annual Technical Conference} (June 2006).
 
+\bibitem{exploitdb}
+\textsc{Offensive Security, Inc.} The Exploit Database. {\tt http://www.exploit-db.com}.
+
+\bibitem{metasploit}
+\textsc{Rapid 7 Inc.} Metasploit Framework. {\tt http://www.metasploit.com}.
+
 \bibitem{somayaji}
 \textsc{Somayaji, A. and Forrest, S.} Automated Response Using System-Call Delays. In {\em Proceedings of the 2000 USENIX Annual Technical Conference} (August 2000).
 
 \bibitem{correlated-anomalies}
 \textsc{Tariq, D., Baig, B., Gehani, A., Mahmood, S., Tahir, R., Aqil, A., and Zaffar, F.} Identifying the provenance of correlated anomalies. In {\em SAC'11 Proceedings of the 2011 ACM Symposium on Applied Computing} (March 2011).
 
-\bibitem{metasploit}
-\textsc{Rapid 7 Inc.} Metasploit Framework. \tt{http://www.metasploit.com}.
-
-\bibitem{exploitdb}
-\textsc{Offensive Security, Inc.} The Exploit Database. \tt{http://www.exploit-db.com}.
 \end{thebibliography}
 
 \end{document}
