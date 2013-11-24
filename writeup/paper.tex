@@ -96,8 +96,8 @@ As described above, in order to generate a KDE model, we need some statistic to 
 \item The number of output files to the node.
 \item The number of output processes to the node.
 \item The number of ouput pipes to the node.
-\item file\_in\_version ??? XXX
-\item file\_out\_version ??? XXX
+\item file\_in\_version The "version" number of an incoming file.
+\item file\_out\_version The "version" number of an outgoing file.
 \end{enumerate}
 For ease of computation and comparison, we treated the different node types (e.g. file, process, pipe) separately so that we actually had different counts for "input files to a file node" and "input files to a process node", for instance.
 \subsection{Centrality Metrics}
@@ -122,7 +122,7 @@ In Figure 1, we see a few examples of a generated histogram and KDE model. The g
 \section{Evaluation}
 
 \subsection{Evaluation Methodology}
-In order to test our techniques, we needed to run “exploits” on our PASS-enabled machine. We looked to prior work to get a sense of the different types of techniques commonly used to exploit security vulnerabilities. Commonly, remote network techniques (as seen in Backtracker \cite{backtracker}) are used to broach insecure systems. Metasploit [CITE] is a software package designed to facilitate running exploits on insecure system. Searching the Metasploit database, as well as the online Exploit Database (exploit-db.com) [CITE], we found that most successful techniques involve exploiting vulnerabilities in software that a target system is running, as opposed to vulnerabilities in the target system itself. Put another way, we sought to exploit software packages, like mcrypt and gcc, not the Linux kernel itself. 
+In order to test our techniques, we needed to run “exploits” on our PASS-enabled machine. We looked to prior work to get a sense of the different types of techniques commonly used to exploit security vulnerabilities. Commonly, remote network techniques (as seen in Backtracker \cite{backtracker}) are used to broach insecure systems. Metasploit \cite{metasploit} is a software package designed to facilitate running exploits on insecure system. Searching the Metasploit database, as well as the online Exploit Database \cite{exploitdb}, we found that most successful techniques involve exploiting vulnerabilities in software that a target system is running, as opposed to vulnerabilities in the target system itself. Put another way, we sought to exploit software packages, like mcrypt and gcc, not the Linux kernel itself. 
 
 We found that many of the popular exploits involved buffer overflows and arbitrary code execution. Programming bugs in a piece of software allowed a malicious user, sending well-crafted data, to run arbitrary code on the target system. In particular, the mcrypt encryption package had a long standing buffer overflow, which would allow a malicious user to run their own code when mcrypt tried to decrypt the crafted exploit file. Due to limitations in our Virtual Machine set up, we were unable to exploit the vulnerable version of mcrypt, much like the authors of Backtracker \cite{backtracker} found. To emulate this exploit, we designed our own program, which would decrypt (via ROT13) an input file. When sent a particular “exploit file” which contained malicious lines, our program would stop decrypting and start running the code specified in the file.
 
@@ -132,10 +132,23 @@ To generate the provenance data necessary to run the above analyses, we needed t
 
 For our system administration attack, we compiled the PASS toolset using GCC, and exported the provenance from these runs. We then replaced GCC with our exploited version, and compiled a few files, and exported the provenance again. In this way, we again acquired provenance for “normal” usage, before acquiring provenance for our attempted exploit. 
 
+\subsection{Selecting Metrics}
+Because we had no prior intuition into what the provenance data would actually look like, we approached selecting metrics from an objective, data-based standpoint. We wanted to use metrics that had variation over our workload, so as not to minimize the introduction of workload dependent data. Towards this end, we graphed all of the metrics over the "normal" provenance data, to see where there were trends and variation. Our results for GCC are in Figures 2 and 3. We can see that proc\_out\_proc (outgoing processes) and the ancestor and opsahl centrality metrics have more variation, and will be less likely to introduce biases. As we include more data (as discussed in Future Works), these sorts of graphs will become increasingly important in selecting good metrics for evaluation.
+\begin{figure}
+  \caption{Histograms over all "simple" provenance statistics for GCC}
+  \centering
+    \includegraphics[width=0.5\textwidth]{img/gcc_stats.png}
+\end{figure}
+\begin{figure}
+  \caption{Histograms over all centrality metrics for GCC}
+  \centering
+    \includegraphics[width=0.5\textwidth]{img/gcc_cent_stats.png}
+\end{figure}
+
 
 \subsection{Results}
 \subsection{Provenance Data}
-After running the normal and exploited programs described above, we visualized the provenance graphs using Orbiter \cite{orbiter}. After searching for the nodes named after our programs, we were able to find both the clean and exploited nodes. The clean nodes for "hello" simply read in one file through a pipe and outputted one file, whereas the exploited version clearly has a forked "/usr/bin/ls" process. Similarly, the mcrypt simulation (implemented in Python) has only an output file as a descendent normally, but when exploited has multiple extra processes/files as descendents (see Figure 2). Similarly, the normal GCC and exploited GCC displayed very different provenance graphs. 
+After running the normal and exploited programs described above, we visualized the provenance graphs using Orbiter \cite{orbiter}. After searching for the nodes named after our programs, we were able to find both the clean and exploited nodes. The clean nodes for "hello" simply read in one file through a pipe and outputted one file, whereas the exploited version clearly has a forked "/usr/bin/ls" process. Similarly, the mcrypt simulation (implemented in Python) has only an output file as a descendent normally, but when exploited has multiple extra processes/files as descendents (see Figure 4). Similarly, the normal GCC and exploited GCC displayed very different provenance graphs. 
 \begin{figure*}
   \caption{Descendents of an unexploited mcrypt-style program. Simply an output file. Below, descendents of an exploited mcrypt-style program. In addition to an (offscreen) output file, there is also an outgoing /bin/sh process, with its own children.}
   \centering
@@ -143,7 +156,8 @@ After running the normal and exploited programs described above, we visualized t
 \end{figure*}
 
 \subsection{Statistical Data and KDE Predictions}
-Table 1 summarizes some of the preliminary results we have generated. Here we have included, for each statistic and test, the average over the "normal" nodes, the observed value for the "test" node, and the KDE probability output for that value. We have chosen four metrics that provided a statistically significant result. The other statistics failed to be as powerful (see Table 2 XXX).
+Table 1 summarizes some of the preliminary results we have generated. Here we have included, for each statistic and test, the average over the "normal" nodes, the observed value for the "test" node, and the KDE probability output for that value. We have chosen four metrics that provided a statistically significant result.
+% The other statistics failed to be as powerful (see Table 2 XXX).
 % from http://hhh123.wordpress.com/2008/08/13/latex-table-across-two-columns/
 \begin{center}
 \begin{table*}[ht]
@@ -237,6 +251,11 @@ We have demonstrated that provenance data (in this case, data generated by PASS)
 \bibitem{correlated-anomalies}
 \textsc{Tariq, D., Baig, B., Gehani, A., Mahmood, S., Tahir, R., Aqil, A., and Zaffar, F.} Identifying the provenance of correlated anomalies. In {\em SAC'11 Proceedings of the 2011 ACM Symposium on Applied Computing} (March 2011).
 
+\bibitem{metasploit}
+\textsc{Rapid 7 Inc.} Metasploit Framework. \tt{http://www.metasploit.com}.
+
+\bibitem{exploitdb}
+\textsc{Offensive Security, Inc.} The Exploit Database. \tt{http://www.exploit-db.com}.
 \end{thebibliography}
 
 \end{document}
