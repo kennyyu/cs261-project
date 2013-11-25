@@ -191,7 +191,7 @@ $$
 We each metric, we computed the centrality of all the nodes and aggregated the counts by name to generate our histogram and kernel density estimations like the simple statistics we used above.
 
 \subsection{Implementation}
-We used Orbiter \cite{orbiter} to visualize and examine the provenance graphs. We wrote Python scripts to (1) parse the raw BerkeleyDB database files storing the PASS data (2) build the provenance graphs (3) collect the counts for each statistic (which include running the centrality calculations), and (4) optionally outputting the histograms and kernel density estimations for a node of interest in a second provenance graph.
+We used Orbiter \cite{orbiter} to visualize and examine the provenance graphs. We wrote Python scripts to (1) parse the raw BerkeleyDB database files storing the PASS data (2) build the provenance graphs (3) collect the counts for each statistic (which include running the centrality calculations), and (4) optionally outputting the histograms and kernel density estimations for a node of interest in a second provenance graph. We should note here that some centrality calculations proved difficult to run efficiently on large provenance graphs, particularly the Eigenvector Centrality mentioned above. As such, it is not included in our below analyses. 
 
 \subsection{Examples}
 In Figure 1, we see a few examples of a generated histogram and KDE model. The green bars represent the histogram for the particular statistic, and the blue curve is the KDE. Finally, the red line is the value for a ``test" node. In this case, the test node appears to be a possible exploit, because it intersects the KDE at low values. 
@@ -259,13 +259,13 @@ The unimodal and bimodal statistics would not generate useful kernel density est
 \end{figure*}
 
 
-\subsection{Results}
+\section{Results}
 \subsection{Provenance Data}
 After running the normal and exploited programs described above, we visualized the provenance graphs using Orbiter \cite{orbiter}. After searching for the nodes named after our programs, we were able to find both the clean and exploited nodes. The clean nodes for ``hello" simply read in one file through a pipe and outputted one file, whereas the exploited version clearly has a forked \texttt{/usr/bin/ls} process. Similarly, the mcrypt simulation (implemented in Python) has only an output file as a descendent normally, but when exploited has multiple extra processes/files as descendants (see Figure 2 and Figure 3). Similarly, the normal GCC and exploited GCC displayed very different provenance graphs, but they were too big to fit legibly on a page.
 
 
 \subsection{Statistical Data and KDE Predictions}
-Table 1 summarizes some of the preliminary results we have generated. Here we have included, for each statistic and test, the average over the "normal" nodes, the observed value for the "test" node, and the KDE probability output for that value. We have chosen four metrics that provided a statistically significant result. 
+Table 2 summarizes some of the preliminary results we have generated. Here we have included, for each statistic and test, the average over the "normal" nodes, the observed value for the "test" node, and the KDE probability output for that value. We have chosen four metrics that provided a statistically significant result. 
 % The other statistics failed to be as powerful (see Table 2 XXX).
 % from http://hhh123.wordpress.com/2008/08/13/latex-table-across-two-columns/
 % TODO: include difference/ratio from normal?
@@ -278,8 +278,10 @@ Table 1 summarizes some of the preliminary results we have generated. Here we ha
     metric & hello & mcrypt & gcc \\ \hline
      \# forked processes & 0.0 | 1 | 0.108 & 0.0 | 1 | 0.107 & 0.9 | 0 | 0.408 \\ \hline
      \# input files & 0.5 | 0 | 0.453 & 0.5 | 0 | 0.453 & 0.5 | 1 | 0.107 \\ \hline
-     \# ouptut files & 0.5 | 1 | 0.453 & 0.5 | 1 | 0.453 & 0.0 | 3 | 0.000 \\ \hline
-    Opsahl centrality & 1.791 | 2.83 | 0.252 & 1.250 | 4.867 | 0.000 & 2.793 | 7.415 | 0.024 \\
+     \# output files & 0.5 | 1 | 0.453 & 0.5 | 1 | 0.453 & 0.0 | 3 | 0.000 \\ \hline
+    Opsahl centrality & 1.791 | 2.83 | 0.252 & 1.250 | 4.867 | 0.000 & 2.793 | 7.415 | 0.024 \\ \hline
+    %Ancestor centrality & 0.0009 | 0.0011 | 0.799 & 0.0002 | 0.0014 | 0.798 & 0.0007 | 0.0002 | 0.798 \\
+
     \hline
   \end{tabular}
   \end{center}
@@ -289,8 +291,37 @@ Table 1 summarizes some of the preliminary results we have generated. Here we ha
 }
 \label{tb:tablename}
 \end{table*}
+\subsection{Discrimination/False Positives}
+We were initially concerned that while our methods would reveal exploited nodes, they would also flag ``normal'' nodes as potential exploits. To determine whether this was the case, we ran our analyses on the ``normal'' nodes. To determine the worst possible outcome, here we report the minimum KDE value that a ``good'' node produced for a given test. If this value is significantly lower than the value we saw for a ``bad'' node, we can be reasonably confident in the power of that test. This method should also be investigated as a means for automatically determining thresholds for ``bad'' nodes. 
 
-\subsection{Discussion}
+In Table 3, we report, for each exploit, the minimum KDE value we saw for a ``normal'' node, along with the number of nodes examined. Comparing these values to the values shown in Table 2 confirms our belief that these metrics can distinguish between ``normal'' and abnormal nodes. One exception is that of outgoing processes for gcc, where the minimum node was far below even the exploit node. The node in question only had one outgoing process, where most nodes (as shown in Figure 1) had 0 or 2. As shown in the histogram, there were nodes with this odd value. The node in question had normal values for the other metrics, however, so a combined view would not have necessarily flagged the node as abnormal. These combined metrics must be developed so as to minimize false positives and maximize true positives.
+\begin{table*}[ht]
+\label{results}
+{\small
+  \begin{center}
+  \begin{tabular}{| l | l | l | l |}
+    \hline
+    metric & hello (80 nodes) & mcrypt (424) & gcc (154) \\ \hline
+     \# forked processes & 0.453 & 0.798 & 0.166\\ \hline
+     \# input processes &  0.617 & 0.453 & 0.453\\ \hline
+
+     \# input files & 0.453 & 0.453 & 0.798\\ \hline
+     \# output files &  0.453 & 0.798 & 0.798\\ \hline
+
+     \# input pipes & 0.798 & 0.798 & 0.798\\ \hline
+     \# output pipes &  0.798 & 0.798 & 0.798\\ \hline
+
+    \hline
+  \end{tabular}
+  \end{center}
+}
+\hfill{}
+\caption{minimum kernel density estimate of test node being ``normal" seen on a ``normal'' node. With few exceptions, these values are high.
+}
+\label{tb:tablename}
+\end{table*}
+
+\section{Discussion}
 \subsection{Successes}
 We were able to accurately identify our three exploited programs. Each was a slightly different exploit, but each exploit deviated enough on some metrics which flagged them as non-normal. 
 
