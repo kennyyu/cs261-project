@@ -7,7 +7,7 @@ NAMING CONVENTION
 start node type, direction, edge type, other node's type
 """
 
-SHOULD_HARDCODE_GCC = False
+SHOULD_HARDCODE_GCC = True
 
 def file_out_file(dg, nodes=None):
     return count_edge_types(dg, nodes=nodes, dir='out', nodetype='FILE', edgetype='INPUT', nodetype2='FILE')

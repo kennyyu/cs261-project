@@ -1,0 +1,172 @@
+HELLO
+python detect.py ../data/db_hello_v1 2680 0 ../data/db_hello_x 2609 0 simple
+>>>>>GOOD ON GOOD
+file_in_file None
+file_in_proc None
+file_in_version None
+file_out_file None
+file_out_proc None
+file_out_version None
+pipe_in_proc None
+pipe_out_proc None
+proc_in_file 0.452933246915
+proc_in_pipe 0.616785121012
+proc_in_proc 0.452933246915
+proc_in_version 0.452933246915
+proc_out_file 0.452933246915
+proc_out_pipe 0.797884560803
+proc_out_proc 0.797884560803
+proc_out_version 0.452933246915
+>>>>>GOOD ON GOOD (on 80 nodes)
+file_in_file None
+file_in_proc None
+file_in_version None
+file_out_file None
+file_out_proc None
+file_out_version None
+pipe_in_proc None
+pipe_out_proc None
+proc_in_file 0.452933246915
+proc_in_pipe 0.289081372818
+proc_in_proc 0.452933246915
+proc_in_version 0.452933246915
+proc_out_file 0.452933246915
+proc_out_pipe 0.797884560803
+proc_out_proc 0.797884560803
+proc_out_version 0.452933246915
+
+>>>>>BAD ON GOOD
+./hello {'file_out_proc': 0, 'proc_out_version': 1, 'proc_in_proc': 1, 'proc_in_pipe': 0, 'file_in_file': 0, 'proc_in_version': 0, 'pipe_out_proc': 0, 'file_in_version': 0, 'proc_in_file': 0, 'proc_out_proc': 1, 'file_in_proc': 0, 'proc_out_pipe': 0, 'pipe_in_proc': 0, 'file_out_file': 0, 'file_out_version': 0, 'proc_out_file': 0}
+file_in_file None
+file_in_proc None
+file_in_version None
+file_out_file None
+file_out_proc None
+file_out_version None
+pipe_in_proc None
+pipe_out_proc None
+proc_in_file 0.452933246915
+proc_in_pipe 0.616785121012
+proc_in_proc 0.452933246915
+proc_in_version 0.452933246915
+proc_out_file 0.452933246915
+proc_out_pipe 0.797884560803
+proc_out_proc 0.107981933026
+proc_out_version 0.452933246915
+
+
+python detect.py ../data/db_input\ 2/ 5151 0 ../data/db_bad_input 4969 0 simple
+MCRYPT
+>>>>>GOOD ON GOOD
+file_in_file None
+file_in_proc None
+file_in_version None
+file_out_file None
+file_out_proc None
+file_out_version None
+pipe_in_proc None
+pipe_out_proc None
+proc_in_file 0.452933246915
+proc_in_pipe 0.797884560803
+proc_in_proc 0.452933246915
+proc_in_version 0.452933246915
+proc_out_file 0.452933246915
+proc_out_pipe 0.797884560803
+proc_out_proc 0.797884560803
+proc_out_version 0.452933246915
+>>>>>GOOD ON GOOD (on 424 nodes)
+file_in_file None
+file_in_proc None
+file_in_version None
+file_out_file None
+file_out_proc None
+file_out_version None
+pipe_in_proc None
+pipe_out_proc None
+proc_in_file 0.452933246915
+proc_in_pipe 0.797884560803
+proc_in_proc 0.452933246915
+proc_in_version 0.452933246915
+proc_out_file 0.452933246915
+proc_out_pipe 0.797884560803
+proc_out_proc 0.797884560803
+proc_out_version 0.452933246915
+
+>>>>>BAD ON GOOD
+/usr/bin/python {'file_out_proc': 0, 'proc_out_version': 1, 'proc_in_proc': 1, 'proc_in_pipe': 0, 'file_in_file': 0, 'proc_in_version': 0, 'pipe_out_proc': 0, 'file_in_version': 0, 'proc_in_file': 0, 'proc_out_proc': 1, 'file_in_proc': 0, 'proc_out_pipe': 0, 'pipe_in_proc': 0, 'file_out_file': 0, 'file_out_version': 0, 'proc_out_file': 0}
+file_in_file None
+file_in_proc None
+file_in_version None
+file_out_file None
+file_out_proc None
+file_out_version None
+pipe_in_proc None
+pipe_out_proc None
+proc_in_file 0.452933246915
+proc_in_pipe 0.797884560803
+proc_in_proc 0.452933246915
+proc_in_version 0.452933246915
+proc_out_file 0.452933246915
+proc_out_pipe 0.797884560803
+proc_out_proc 0.107981933026
+proc_out_version 0.452933246915
+
+
+
+python detect.py ../data/db_passtools 5404 0 ../data/db_passtools_x2 5181 1 simple --hardcode
+GCC
+>>>>>GOOD ON GOOD (on 154 nodes)
+file_in_file None
+file_in_proc None
+file_in_version None
+file_out_file None
+file_out_proc None
+file_out_version None
+pipe_in_proc None
+pipe_out_proc None
+proc_in_file 0.797884560803
+proc_in_pipe 0.797884560803
+proc_in_proc 0.452933246915
+proc_in_version 0.452933246915
+proc_out_file 0.797884560803
+proc_out_pipe 0.797884560803
+proc_out_proc 0.16622046654
+proc_out_version 0.452933246915
+
+>>>>>BAD ON GOOD
+/usr/bin/python {'file_out_proc': 0, 'proc_out_version': 0, 'proc_in_proc': 0, 'proc_in_pipe': 0, 'file_in_file': 0, 'proc_in_version': 1, 'pipe_out_proc': 0, 'file_in_version': 0, 'proc_in_file': 1, 'proc_out_proc': 0, 'file_in_proc': 0, 'proc_out_pipe': 0, 'pipe_in_proc': 0, 'file_out_file': 0, 'file_out_version': 0, 'proc_out_file': 3}
+file_in_file None
+file_in_proc None
+file_in_version None
+file_out_file None
+file_out_proc None
+file_out_version None
+pipe_in_proc None
+pipe_out_proc None
+proc_in_file 0.107981933026
+proc_in_pipe 0.797884560803
+proc_in_proc 0.452933246915
+proc_in_version 0.452933246915
+proc_out_file 1.21517656996e-08
+proc_out_pipe 0.797884560803
+proc_out_proc 0.408168873897
+proc_out_version 0.452933246915
+
+DETAILED GCC
+>>>>>GOOD ON GOOD (on 154 nodes)
+file_in_file None (5696, 0) {'file_out_proc': 0, 'proc_out_version': 1, 'proc_in_proc': 1, 'proc_in_pipe': 0, 'file_in_file': 0, 'proc_in_version': 0, 'pipe_out_proc': 0, 'file_in_version': 0, 'proc_in_file': 0, 'proc_out_proc': 2, 'file_in_proc': 0, 'proc_out_pipe': 0, 'pipe_in_proc': 0, 'file_out_file': 0, 'file_out_version': 0, 'proc_out_file': 0}
+file_in_proc None (5696, 0) {'file_out_proc': 0, 'proc_out_version': 1, 'proc_in_proc': 1, 'proc_in_pipe': 0, 'file_in_file': 0, 'proc_in_version': 0, 'pipe_out_proc': 0, 'file_in_version': 0, 'proc_in_file': 0, 'proc_out_proc': 2, 'file_in_proc': 0, 'proc_out_pipe': 0, 'pipe_in_proc': 0, 'file_out_file': 0, 'file_out_version': 0, 'proc_out_file': 0}
+file_in_version None (5696, 0) {'file_out_proc': 0, 'proc_out_version': 1, 'proc_in_proc': 1, 'proc_in_pipe': 0, 'file_in_file': 0, 'proc_in_version': 0, 'pipe_out_proc': 0, 'file_in_version': 0, 'proc_in_file': 0, 'proc_out_proc': 2, 'file_in_proc': 0, 'proc_out_pipe': 0, 'pipe_in_proc': 0, 'file_out_file': 0, 'file_out_version': 0, 'proc_out_file': 0}
+file_out_file None (5696, 0) {'file_out_proc': 0, 'proc_out_version': 1, 'proc_in_proc': 1, 'proc_in_pipe': 0, 'file_in_file': 0, 'proc_in_version': 0, 'pipe_out_proc': 0, 'file_in_version': 0, 'proc_in_file': 0, 'proc_out_proc': 2, 'file_in_proc': 0, 'proc_out_pipe': 0, 'pipe_in_proc': 0, 'file_out_file': 0, 'file_out_version': 0, 'proc_out_file': 0}
+file_out_proc None (5696, 0) {'file_out_proc': 0, 'proc_out_version': 1, 'proc_in_proc': 1, 'proc_in_pipe': 0, 'file_in_file': 0, 'proc_in_version': 0, 'pipe_out_proc': 0, 'file_in_version': 0, 'proc_in_file': 0, 'proc_out_proc': 2, 'file_in_proc': 0, 'proc_out_pipe': 0, 'pipe_in_proc': 0, 'file_out_file': 0, 'file_out_version': 0, 'proc_out_file': 0}
+file_out_version None (5696, 0) {'file_out_proc': 0, 'proc_out_version': 1, 'proc_in_proc': 1, 'proc_in_pipe': 0, 'file_in_file': 0, 'proc_in_version': 0, 'pipe_out_proc': 0, 'file_in_version': 0, 'proc_in_file': 0, 'proc_out_proc': 2, 'file_in_proc': 0, 'proc_out_pipe': 0, 'pipe_in_proc': 0, 'file_out_file': 0, 'file_out_version': 0, 'proc_out_file': 0}
+pipe_in_proc None (5696, 0) {'file_out_proc': 0, 'proc_out_version': 1, 'proc_in_proc': 1, 'proc_in_pipe': 0, 'file_in_file': 0, 'proc_in_version': 0, 'pipe_out_proc': 0, 'file_in_version': 0, 'proc_in_file': 0, 'proc_out_proc': 2, 'file_in_proc': 0, 'proc_out_pipe': 0, 'pipe_in_proc': 0, 'file_out_file': 0, 'file_out_version': 0, 'proc_out_file': 0}
+pipe_out_proc None (5696, 0) {'file_out_proc': 0, 'proc_out_version': 1, 'proc_in_proc': 1, 'proc_in_pipe': 0, 'file_in_file': 0, 'proc_in_version': 0, 'pipe_out_proc': 0, 'file_in_version': 0, 'proc_in_file': 0, 'proc_out_proc': 2, 'file_in_proc': 0, 'proc_out_pipe': 0, 'pipe_in_proc': 0, 'file_out_file': 0, 'file_out_version': 0, 'proc_out_file': 0}
+proc_in_file 0.797884560803 (5696, 0) {'file_out_proc': 0, 'proc_out_version': 1, 'proc_in_proc': 1, 'proc_in_pipe': 0, 'file_in_file': 0, 'proc_in_version': 0, 'pipe_out_proc': 0, 'file_in_version': 0, 'proc_in_file': 0, 'proc_out_proc': 2, 'file_in_proc': 0, 'proc_out_pipe': 0, 'pipe_in_proc': 0, 'file_out_file': 0, 'file_out_version': 0, 'proc_out_file': 0}
+proc_in_pipe 0.797884560803 (5696, 0) {'file_out_proc': 0, 'proc_out_version': 1, 'proc_in_proc': 1, 'proc_in_pipe': 0, 'file_in_file': 0, 'proc_in_version': 0, 'pipe_out_proc': 0, 'file_in_version': 0, 'proc_in_file': 0, 'proc_out_proc': 2, 'file_in_proc': 0, 'proc_out_pipe': 0, 'pipe_in_proc': 0, 'file_out_file': 0, 'file_out_version': 0, 'proc_out_file': 0}
+proc_in_proc 0.452933246915 (5696, 0) {'file_out_proc': 0, 'proc_out_version': 1, 'proc_in_proc': 1, 'proc_in_pipe': 0, 'file_in_file': 0, 'proc_in_version': 0, 'pipe_out_proc': 0, 'file_in_version': 0, 'proc_in_file': 0, 'proc_out_proc': 2, 'file_in_proc': 0, 'proc_out_pipe': 0, 'pipe_in_proc': 0, 'file_out_file': 0, 'file_out_version': 0, 'proc_out_file': 0}
+proc_in_version 0.452933246915 (5696, 0) {'file_out_proc': 0, 'proc_out_version': 1, 'proc_in_proc': 1, 'proc_in_pipe': 0, 'file_in_file': 0, 'proc_in_version': 0, 'pipe_out_proc': 0, 'file_in_version': 0, 'proc_in_file': 0, 'proc_out_proc': 2, 'file_in_proc': 0, 'proc_out_pipe': 0, 'pipe_in_proc': 0, 'file_out_file': 0, 'file_out_version': 0, 'proc_out_file': 0}
+proc_out_file 0.797884560803 (5696, 0) {'file_out_proc': 0, 'proc_out_version': 1, 'proc_in_proc': 1, 'proc_in_pipe': 0, 'file_in_file': 0, 'proc_in_version': 0, 'pipe_out_proc': 0, 'file_in_version': 0, 'proc_in_file': 0, 'proc_out_proc': 2, 'file_in_proc': 0, 'proc_out_pipe': 0, 'pipe_in_proc': 0, 'file_out_file': 0, 'file_out_version': 0, 'proc_out_file': 0}
+proc_out_pipe 0.797884560803 (5696, 0) {'file_out_proc': 0, 'proc_out_version': 1, 'proc_in_proc': 1, 'proc_in_pipe': 0, 'file_in_file': 0, 'proc_in_version': 0, 'pipe_out_proc': 0, 'file_in_version': 0, 'proc_in_file': 0, 'proc_out_proc': 2, 'file_in_proc': 0, 'proc_out_pipe': 0, 'pipe_in_proc': 0, 'file_out_file': 0, 'file_out_version': 0, 'proc_out_file': 0}
+proc_out_proc 0.16622046654 (6010, 0) {'file_out_proc': 0, 'proc_out_version': 1, 'proc_in_proc': 1, 'proc_in_pipe': 0, 'file_in_file': 0, 'proc_in_version': 0, 'pipe_out_proc': 0, 'file_in_version': 0, 'proc_in_file': 0, 'proc_out_proc': 1, 'file_in_proc': 0, 'proc_out_pipe': 0, 'pipe_in_proc': 0, 'file_out_file': 0, 'file_out_version': 0, 'proc_out_file': 0}
+proc_out_version 0.452933246915 (5696, 0) {'file_out_proc': 0, 'proc_out_version': 1, 'proc_in_proc': 1, 'proc_in_pipe': 0, 'file_in_file': 0, 'proc_in_version': 0, 'pipe_out_proc': 0, 'file_in_version': 0, 'proc_in_file': 0, 'proc_out_proc': 2, 'file_in_proc': 0, 'proc_out_pipe': 0, 'pipe_in_proc': 0, 'file_out_file': 0, 'file_out_version': 0, 'proc_out_file': 0}

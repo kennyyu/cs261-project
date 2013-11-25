@@ -2,13 +2,14 @@ import argparse
 import graph
 import histogram
 import numpy as np
+from collections import defaultdict
 
-good = '../data/db_hello'
-pnode_good = 2680
+good = '../data/db_passtools_gcc'
+pnode_good = 5183
 version_good = 0
 
-bad = '../data/db_hello_x'
-pnode_bad = 2609
+bad = '../data/db_passtools_x2'
+pnode_bad = 5181
 version_bad = 0
 
 VERBOSE = False
@@ -23,8 +24,22 @@ def test1():
     good_vals = histogram.kde_predict_all(good_kdes, dg_good, node_good)
 
     name = histogram.get_name(dg_good, node_good)
+
+    # extract all nodes with same name:
+    proc_nodes = []
+    proc_vals = {}
+    for node_num, t in nodes_good.iteritems():
+        for v in t:
+            test_node = (node_num, v)
+            gnode_name = histogram.get_name(dg_good, test_node)
+            if gnode_name == name:
+                proc_nodes.append(test_node)
+                vals = histogram.kde_predict_all(good_kdes, dg_good, test_node)
+                proc_vals[test_node] = vals
+
+
     for (k,v) in sorted(good_kdes[name].items()):
-        print k, np.mean(v[1]) if v else v
+        print k, v[1] if v else v
     print
     print
 
@@ -32,6 +47,19 @@ def test1():
     for (k,v) in sorted(good_vals.items()):
         print k,v
 
+    mins = {}
+    min_nodes = {}
+    print ">>>>>GOOD ON GOOD (on %d nodes)" % len(proc_nodes)
+    for node, vals in proc_vals.items():
+        for (k,v) in sorted(vals.items()):
+            if not k in mins:
+                mins[k] = v
+                min_nodes[k] = node
+            elif v < mins[k]:
+                mins[k] = v
+                min_nodes[k] = node
+    for (k,v) in sorted(mins.items()):
+        print k,v,min_nodes[k], histogram.get_vals(dg_good, min_nodes[k])
     print
     print ">>>>>BAD ON GOOD"
     dg_bad, nodes_bad = graph.make_graph(bad)
