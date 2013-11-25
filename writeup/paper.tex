@@ -247,15 +247,15 @@ Because we had no prior intuition into what the histograms on provenance data wo
 The unimodal and bimodal statistics would not generate useful kernel density estimates, as they would predict roughly 0.5 for either a 0 or 1 count, giving us no information about whether the node in question is behaving normally.  On the other hand, the statistics with more variation in data would actually provide more useful information when determining normalcy in new test nodes. As we include more data (as discussed in Future Work), these sorts of graphs will become increasingly important in selecting good statistics for evaluation.
 \begin{figure*}
   \label{simple-gcc}
-  \caption{Histograms over all "simple" provenance statistics for GCC}
+  \caption{Histograms over all "simple" provenance statistics for GCC, with KDE curve}
   \centering
-    \includegraphics[width=0.7\textwidth]{img/gcc_stats.png}
+    \includegraphics[width=0.7\textwidth]{img/gcc_stats2.png}
 \end{figure*}
 \begin{figure*}
   \label{centrality-gcc}
-  \caption{Histograms over all centrality metrics for GCC}
+  \caption{Histograms over all centrality metrics for GCC, with KDE curve}
   \centering
-    \includegraphics[width=0.7\textwidth]{img/gcc_cent_stats.png}
+    \includegraphics[width=0.7\textwidth]{img/gcc_cent_stats2.png}
 \end{figure*}
 
 
