@@ -115,7 +115,7 @@ Despite the existing work to detect intrusions and anomalies, Cao et. al. argue 
 Given the extensive amount of data PASS collects on file-file, file-process, and process-process dependencies and existing work in intrusion detection that uses these kinds of directed graphs of files and process data, it seems plausible to detect intrusions based on provenance data collected by PASS. In particular, we hope to answer the questions:
 \begin{itemize}
 \item Given PASS provenance data, what kinds of intrusions can be detected?
-\item What provenance data is most useful for detecting these kinds of intrusions.
+\item What provenance data is most useful for detecting these kinds of intrusions?
 \end{itemize}
 
 Our system is designed to run offline, so we run our algorithms on the full set of provenance data. While this approach is slower than running an online system like Somayaji and Tariq, it allows us to take in the full picture of the events during a process's execution, without having to preselect the information we think will be useful. This approach is especially helpful because different information leads to the detection of different types of intrusions. The data collected by Backtracker's dependency graph of process and files is very similar to the data PASS generates, and their exploits and analysis techniques directly inspired our work. 
@@ -265,7 +265,7 @@ After running the normal and exploited programs described above, we visualized t
 
 
 \subsection{Statistical Data and KDE Predictions}
-Table 2 summarizes some of the preliminary results we have generated. Here we have included, for each statistic and test, the average over the "normal" nodes, the observed value for the "test" node, and the KDE probability output for that value. We have chosen four metrics that provided a statistically significant result. 
+Table 2 summarizes some of the preliminary results we have generated. Here we have included, for each statistic and test, the average over the "normal" nodes, the observed value for the "test" node, and the KDE probability output for that value. We have chosen four metrics that provided a statistically significant result. Additionally, we've included Ancestor centrality, which from Figure 5's distribution, should have been a good metric as well. However, as seen in Figure 5, the KDE curve does not really follow the distribution. This deviation is because the bandwidth parameter we used for the KDE is much larger than the differences between binds for the ancestor metric. Either scaling up our metric scores or choosing a smaller bandwidth could alleviate this result.
 % The other statistics failed to be as powerful (see Table 2 XXX).
 % from http://hhh123.wordpress.com/2008/08/13/latex-table-across-two-columns/
 % TODO: include difference/ratio from normal?
@@ -280,7 +280,7 @@ Table 2 summarizes some of the preliminary results we have generated. Here we ha
      \# input files & 0.5 | 0 | 0.453 & 0.5 | 0 | 0.453 & 0.5 | 1 | 0.107 \\ \hline
      \# output files & 0.5 | 1 | 0.453 & 0.5 | 1 | 0.453 & 0.0 | 3 | 0.000 \\ \hline
     Opsahl centrality & 1.791 | 2.83 | 0.252 & 1.250 | 4.867 | 0.000 & 2.793 | 7.415 | 0.024 \\ \hline
-    %Ancestor centrality & 0.0009 | 0.0011 | 0.799 & 0.0002 | 0.0014 | 0.798 & 0.0007 | 0.0002 | 0.798 \\
+    Ancestor centrality & 0.0009 | 0.0011 | 0.799 & 0.0002 | 0.0014 | 0.798 & 0.0007 | 0.0002 | 0.798 \\
 
     \hline
   \end{tabular}
