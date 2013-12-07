@@ -1,6 +1,7 @@
 import networkx as nx
 from networkx.readwrite import json_graph
 import json
+import ps
 
 import sys
 # modified from https://code.google.com/p/data-provenance/source/browse/trunk/SPADE/src/spade/reporter/OpenBSM.java
@@ -10,13 +11,15 @@ eventData = {}
 DEBUG = False
 processVertices = {}
 fileVersions = {}
-GET_PS_NAME = False
+GET_PS_NAME = True
 USE_PS = True
 node_counter = 0
 process_node_map = {}
 file_node_map = {}
 graph = nx.DiGraph()
 pathCount = 0
+ps_info = {}
+cur_ps_time = 0
 
 def parseEventToken(line):
     global eventData
@@ -38,6 +41,10 @@ def parseEventToken(line):
         offset_msec = tokens[6]
         eventData["event_id"] = event_id
         eventData["event_time"] = date_time + offset_msec
+
+        # if event occurred after current date_time, load new ps_data
+        if int(date_time) > cur_ps_time:
+            loadPidInfo()
     elif token_type in [36, 122, 117, 124]:
         ##user_audit_id = tokens[1]
         euid = tokens[2]
@@ -290,22 +297,16 @@ def WasGeneratedBy(file, proc):
 
     return edge
 
+def loadPidInfo():
+    global ps_info, cur_ps_time
+    ps_info, cur_ps_time = ps.next_info()
+
 def getPidInfo(pid):
-    return {}
-"""
-    info = line.trim().split("\\s+", 12);
-    processVertex.addAnnotation("pidname", info[11]);
-    processVertex.addAnnotation("ppid", info[1]);
-    String timestring = info[5] + " " + info[6] + " " + info[7] + " " + info[8] + " " + info[9];
-    Long unixtime = new java.text.SimpleDateFormat(simpleDatePattern).parse(timestring).getTime();
-    String starttime_unix = Long.toString(unixtime);
-    String starttime_simple = new java.text.SimpleDateFormat(simpleDatePattern).format(new java.util.Date(unixtime));
-    processVertex.addAnnotation("starttime_unix", starttime_unix);
-    processVertex.addAnnotation("starttime_simple", starttime_simple);
-    processVertex.addAnnotation("user", info[3]);
-    processVertex.addAnnotation("uid", info[2]);
-    processVertex.addAnnotation("gid", info[4]);
-"""
+    print ps_info
+    if pid in ps_info:
+        return ps_info[pid]
+    else:
+        return {}
 
 def createProcessVertex(pid):
     processVertex = {}
