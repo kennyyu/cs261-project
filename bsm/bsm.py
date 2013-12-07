@@ -51,7 +51,7 @@ def parseEventToken(line):
         egid = tokens[3]
         uid = tokens[4]
         gid = tokens[5]
-        pid = tokens[6]
+        pid = tokens[6].strip()
         ##sessionid = tokens[7]
         ##deviceid = tokens[8]
         machineid = tokens[9]
@@ -75,7 +75,7 @@ def parseEventToken(line):
 
     elif token_type in [39, 114]:
         ##error = tokens[1]
-        return_value = tokens[2]
+        return_value = tokens[2].strip()
         eventData["return_value"] = return_value
 
     # removed type 49
@@ -92,7 +92,7 @@ def parseEventToken(line):
     ##    arg_value = tokens[2]
     ##    arg_text = tokens[3]
     elif token_type in [35]:
-        path = tokens[1]
+        path = tokens[1].strip()
         eventData["path" + str(pathCount)] = path
         pathCount += 1
     ##elif token_type in [40]:
@@ -119,7 +119,7 @@ def processEvent(eventData):
         return
     else:
         return
-    time = eventData["event_time"]
+    time = eventData["event_time"].strip()
     checkCurrentProcess()
     thisProcess = processVertices[pid]
 
@@ -244,11 +244,11 @@ def putEdge(edge):
 
 def createFileVertex(path, update):
     fileArtifact = {}
-    path = path.replace("//", "/");
+    path = path.replace("//", "/")
     fileArtifact["path"] = path
-    filename = path.split("/");
+    filename = path.split("/")
     if (len(filename) > 0):
-        fileArtifact["filename"] = filename[len(filename) - 1]
+        fileArtifact["filename"] = filename[len(filename) - 1].strip()
 
     version = fileVersions[path] if path in fileVersions.keys() else 0
     if update and path.startswith("/") and not path.startswith("/dev/"):
@@ -317,9 +317,10 @@ def createProcessVertex(pid):
     return processVertex
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print "Usage: python bsm.py bsmfile"
+    if len(sys.argv) < 3:
+        print "Usage: python bsm.py bsmfile pself"
         sys.exit()
+    ps.setup(sys.argv[2])
     with open(sys.argv[1]) as f:
         for line in f:
             parseEventToken(line)

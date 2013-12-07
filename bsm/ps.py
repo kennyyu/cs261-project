@@ -5,10 +5,10 @@ PID_LOC = 15
 PPID_LOC = 21
 CMD_POS = 84
 
-ps_filename = "sample_data01.ps-elf"
-
-f = open(ps_filename)
-next_date_line = f.readline().rstrip()
+def setup(ps_filename):
+    global f,next_date_line
+    f = open(ps_filename)
+    next_date_line = f.readline().rstrip()
 def next_info():
     global next_date_line
     cur_date_line = next_date_line
