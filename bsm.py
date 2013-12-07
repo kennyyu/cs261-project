@@ -1,12 +1,16 @@
-
+import networkx as nx
 # modified from https://code.google.com/p/data-provenance/source/browse/trunk/SPADE/src/spade/reporter/OpenBSM.java
 
 
 eventData = {}
-processVertices = set()
+processVertices = {}
 fileVersions = {}
 GET_PS_NAME = False
 USE_PS = False
+node_counter = 0
+process_node_map = {}
+file_node_map = {}
+graph = nx.DiGraph()
 
 def parseEventToken(line):
     # main loop
@@ -18,23 +22,23 @@ def parseEventToken(line):
         eventData = {}
 
         pathCount = 0
-        record_length = tokens[1]
-        audit_record_version = tokens[2]
+        ##record_length = tokens[1]
+        ##audit_record_version = tokens[2]
         event_id = tokens[3]
-        event_id_modifier = tokens[4]
+        ##event_id_modifier = tokens[4]
         date_time = tokens[5]
         offset_msec = tokens[6]
         eventData["event_id"] = event_id
         eventData["event_time"] = date_time + offset_msec
     elif token_type in [36, 122, 117, 124]:
-        user_audit_id = tokens[1]
+        ##user_audit_id = tokens[1]
         euid = tokens[2]
         egid = tokens[3]
         uid = tokens[4]
         gid = tokens[5]
         pid = tokens[6]
-        sessionid = tokens[7]
-        deviceid = tokens[8]
+        ##sessionid = tokens[7]
+        ##deviceid = tokens[8]
         machineid = tokens[9]
         eventData["pid"] = pid
         eventData["uid"] = uid
@@ -42,49 +46,49 @@ def parseEventToken(line):
         eventData["euid"] = euid
         eventData["egid"] = egid
         eventData["machine_id"] = machineid
-    elif token_type in [38, 123, 119, 125]:
-        process_user_audit_id = tokens[1]
-        process_euid = tokens[2]
-        process_egid = tokens[3]
-        process_uid = tokens[4]
-        process_gid = tokens[5]
-        process_pid = tokens[6]
-        process_session_id = tokens[7]
-        process_device_id = tokens[8]
-        process_machine_id = tokens[9]
+    ##elif token_type in [38, 123, 119, 125]:
+        ##process_user_audit_id = tokens[1]
+        ##process_euid = tokens[2]
+        ##process_egid = tokens[3]
+        ##process_uid = tokens[4]
+        ##process_gid = tokens[5]
+        ##process_pid = tokens[6]
+        ##process_session_id = tokens[7]
+        ##process_device_id = tokens[8]
+        ##process_machine_id = tokens[9]
 
 
     elif token_type in [39, 114]:
-        error = tokens[1]
+        ##error = tokens[1]
         return_value = tokens[2]
         eventData["return_value"] = return_value
 
     # removed type 49
-    elif token_type in [62,115]:
-        file_access_mode = tokens[1]
-        owneruid = tokens[2]
-        ownergid = tokens[3]
-        filesystemid = tokens[4]
-        inodeid = tokens[5]
-        filedeviceid = tokens[6]
+    ##elif token_type in [62,115]:
+        ##file_access_mode = tokens[1]
+        ##owneruid = tokens[2]
+        ##ownergid = tokens[3]
+        ##filesystemid = tokens[4]
+        ##inodeid = tokens[5]
+        ##filedeviceid = tokens[6]
 
-    elif token_type in [45,113]:
-        arg_number = tokens[1]
-        arg_value = tokens[2]
-        arg_text = tokens[3]
+    ##elif token_type in [45,113]:
+    ##    arg_number = tokens[1]
+    ##    arg_value = tokens[2]
+    ##    arg_text = tokens[3]
     elif token_type in [35]:
         path = tokens[1]
         eventData["path" + str(pathCount)] = path
         pathCount += 1
-    elif token_type in [40]:
-        text_string = tokens[1]
-    elif token_type in [128,129]:
-        socket_family = tokens[1]
-        socket_local_port = tokens[2]
-        socket_address = tokens[3]
-    elif token_type in [82]:
-        exit_status = tokens[1]
-        exit_value = tokens[2]
+    ##elif token_type in [40]:
+    ##    text_string = tokens[1]
+    ##elif token_type in [128,129]:
+    ##    socket_family = tokens[1]
+    ##    socket_local_port = tokens[2]
+    ##    socket_address = tokens[3]
+    ##elif token_type in [82]:
+    ##    exit_status = tokens[1]
+    ##    exit_value = tokens[2]
     elif token_type in [19]:
         processEvent(eventData)
 
@@ -93,28 +97,27 @@ def processEvent(eventData):
     pid = eventData["pid"]
     event_id = int(eventData["event_id"])
     time = eventData["event_time"]
-    #Process thisProcess = processVertices.get(pid);
     thisProcess = processVertices[pid]
-    #boolean put;
 
     # exit
     if event_id in [1]:
         checkCurrentProcess()
         processVertices.remove(pid)
+        del process_node_map[pid]
 
     # fork
     if event_id in [2,25,241]:
         checkCurrentProcess();
         childPID = eventData["return_value"]
-        childProcess = createProcessVertex(childPID) if USE_PS else null
-        if (childProcess == null):
+        childProcess = createProcessVertex(childPID) if USE_PS else None
+        if (childProcess == None):
             childProcess = {}
             childProcess["pid"] = childPID
             childProcess["ppid"] = pid
             childProcess["uid"] = eventData["uid"]
             childProcess["gid"] = eventData["gid"]
 
-        putVertex(childProcess)
+        putProcessVertex(childProcess)
 
         processVertices[childPID] = childProcess
 
@@ -130,7 +133,7 @@ def processEvent(eventData):
         put = not readPath.replace("//", "/") in fileVersions.keys()
         readFileArtifact = createFileVertex(readPath, false)
         if (put):
-            putVertex(readFileArtifact)
+            putFileVertex(readFileArtifact)
 
         readEdge = Used(thisProcess, readFileArtifact)
         readEdge["time"] = time
@@ -141,7 +144,7 @@ def processEvent(eventData):
         checkCurrentProcess()
         writePath = eventData["path1"] if "path1" in eventData else eventData["path0"]
         writeFileArtifact = createFileVertex(writePath, true)
-        putVertex(writeFileArtifact)
+        putFileVertex(writeFileArtifact)
         generatedEdge = WasGeneratedBy(writeFileArtifact, thisProcess)
         generatedEdge["time"] = time
         putEdge(generatedEdge)
@@ -160,13 +163,13 @@ def processEvent(eventData):
         put = not fromPath.replace("//", "/") in fileVersions.keys()
         fromFileArtifact = createFileVertex(fromPath, false)
         if (put):
-            putVertex(fromFileArtifact)
+            putFileVertex(fromFileArtifact)
 
         renameReadEdge = Used(thisProcess, fromFileArtifact)
         renameReadEdge["time"] = time
         putEdge(renameReadEdge)
         toFileArtifact = createFileVertex(toPath, true)
-        putVertex(toFileArtifact)
+        putFileVertex(toFileArtifact)
         renameWriteEdge = WasGeneratedBy(toFileArtifact, thisProcess)
         renameWriteEdge["time"] = time
         putEdge(renameWriteEdge)
@@ -174,12 +177,28 @@ def processEvent(eventData):
         renameEdge["operation"] = "rename"
         renameEdge["time"] = time
 
-def putVertex(vert):
-    raise NotImplementedError
+def putFileVertex(vert):
+    vert["type"] = "file"
+    vert["node_number"] = node_counter
+    file_node_map[(vert["path"])] = node_counter
+    node_counter += 1
+def putProcessVertex(vert):
+    vert["type"] = "process"
+    process_node_map[vert["pid"]] = node_counter
+    vert["node_number"] = node_counter
+    node_counter += 1
 def WasTriggeredBy(child, parent):
-    raise NotImplementedError
+    # get node number for process
+    child_node_num = process_node_map[child["pid"]]
+    parent_node_num = process_node_map[parent["pid"]]
+    edge = {}
+    edge["from"] = child_node_num
+    edge["to"] = parent_node_num
+    edge["type"] = "triggered by"
 def putEdge(edge):
-    raise NotImplementedError
+    graph.add_edge(edge["from"], edge["to"])
+    graph[edge["from"]][edge["to"]]["type"] = edge["type"]
+
 def createFileVertex(path, update):
     fileArtifact = {}
     path = path.replace("//", "/");
@@ -197,7 +216,15 @@ def createFileVertex(path, update):
     return fileArtifact
 
 def Used(proc, fileVert):
-    raise NotImplementedError
+    # get node number for process
+    proc_node_num = process_node_map[proc["pid"]]
+    file_node_num = file_node_map[fileVert["path"]]
+    edge = {}
+    edge["from"] = proc_node_num
+    edge["to"] = file_node_num
+    edge["type"] = "used"
+
+    return edge
 def checkCurrentProcess():
     pid = eventData["pid"]
     # Make sure the process that triggered this event has already been added.
@@ -209,7 +236,7 @@ def checkCurrentProcess():
             process["uid"] = eventData["uid"]
             process["gid"] = eventData["gid"]
 
-        putVertex(process)
+        putProcessVertex(process)
         processVertices[pid] = process
         ppid = process["ppid"] if "ppid" in process else None
         if ((ppid != None) and ppid in processVertices):
@@ -217,7 +244,16 @@ def checkCurrentProcess():
             putEdge(triggeredEdge)
 
 def WasGeneratedBy(file, process):
-    raise NotImplementedError
+    # get node number for process
+    proc_node_num = process_node_map[proc["pid"]]
+    file_node_num = file_node_map[file["path"]]
+    edge = {}
+    edge["from"] = proc_node_num
+    edge["to"] = file_node_num
+    edge["type"] = "generated"
+
+    return edge
+
 def getPidInfo(pid):
     return {}
 """
