@@ -74,16 +74,16 @@ def parseEventToken(line):
         path = tokens[1]
         eventData["path" + str(pathCount)] = path
         pathCount++
-    elif token_type in [40]
+    elif token_type in [40]:
         text_string = tokens[1]
-    elif token_type in [128,129]
+    elif token_type in [128,129]:
         socket_family = tokens[1]
         socket_local_port = tokens[2]
         socket_address = tokens[3]
-    elif token_type in [82]
+    elif token_type in [82]:
         exit_status = tokens[1]
         exit_value = tokens[2]
-    elif token_type in [19]
+    elif token_type in [19]:
         processEvent(eventData)
 
 
