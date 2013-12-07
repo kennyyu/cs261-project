@@ -34,7 +34,7 @@ def parseEventToken(line):
         sessionid = tokens[7]
         deviceid = tokens[8]
         machineid = tokens[9]
-        eventData["pid" = pid
+        eventData["pid"] = pid
         eventData["uid"] = uid
         eventData["gid"] = gid
         eventData["euid"] = euid
@@ -52,11 +52,13 @@ def parseEventToken(line):
         process_machine_id = tokens[9]
 
 
-    elif token_type in [39, 114]
+    elif token_type in [39, 114]:
         error = tokens[1]
         return_value = tokens[2]
         eventData["return_value"] = return_value
-    elif token_type in [49,62,115]
+
+    # removed type 49
+    elif token_type in [62,115]:
         file_access_mode = tokens[1]
         owneruid = tokens[2]
         ownergid = tokens[3]
@@ -64,14 +66,14 @@ def parseEventToken(line):
         inodeid = tokens[5]
         filedeviceid = tokens[6]
 
-    elif token_type in [45,113]
+    elif token_type in [45,113]:
         arg_number = tokens[1]
         arg_value = tokens[2]
         arg_text = tokens[3]
-    elif token_type in [35]
+    elif token_type in [35]:
         path = tokens[1]
-        eventData["path" + pathCount] = path
-        pathCount++;
+        eventData["path" + str(pathCount)] = path
+        pathCount++
     elif token_type in [40]
         text_string = tokens[1]
     elif token_type in [128,129]
@@ -82,7 +84,7 @@ def parseEventToken(line):
         exit_status = tokens[1]
         exit_value = tokens[2]
     elif token_type in [19]
-        processEvent(eventData);
+        processEvent(eventData)
 
 
 def processEvent(eventData):
@@ -99,13 +101,10 @@ def processEvent(eventData):
         thisProcess = processVertices[pid]
         #boolean put;
 
-        switch (event_id) {
-
             # exit
             if event_id in [1]:
-                checkCurrentProcess();
-                processVertices.remove(pid);
-                break;
+                checkCurrentProcess()
+                processVertices.remove(pid)
 
             # fork
             if event_id in [2,25,241]:
@@ -133,15 +132,11 @@ def processEvent(eventData):
             elif event_id in [72]:
                 checkCurrentProcess()
                 readPath = eventData["path1"] if "path1" in eventData else eventData["path0"]
-                """
                 put = !fileVersions.containsKey(readPath.replace("//", "/"));
-                """
                 readFileArtifact = createFileVertex(readPath, false)
-                """
-                if (put) {
-                    putVertex(readFileArtifact);
-                }
-                """
+                if (put):
+                    putVertex(readFileArtifact)
+
                 readEdge = Used(thisProcess, readFileArtifact)
                 readEdge["time"] = time
                 putEdge(readEdge)
@@ -161,20 +156,17 @@ def processEvent(eventData):
                 checkCurrentProcess()
                 fromPath = eventData["path1"]
                 toPath = eventData["path2"]
+
                 """
-                if (!toPath.startsWith("/")) {
+                if (!toPath.startsWith("/")):
                     toPath = fromPath.substring(0, fromPath.lastIndexOf("/")) + toPath;
                 }
                 """
-                """
                 put = !fileVersions.containsKey(fromPath.replace("//", "/"));
-                """
                 fromFileArtifact = createFileVertex(fromPath, false)
-                """
-                if (put) {
-                    putVertex(fromFileArtifact);
-                }
-                """
+                if (put):
+                    putVertex(fromFileArtifact)
+
                 renameReadEdge = Used(thisProcess, fromFileArtifact)
                 renameReadEdge["time"] = time
                 putEdge(renameReadEdge)
@@ -215,19 +207,19 @@ def checkCurrentProcess():
     pid = eventData["pid"]
     # Make sure the process that triggered this event has already been added.
     if (not pid in processVertices):
-        Process process = createProcessVertex(pid) if USE_PS else None;
+        process = createProcessVertex(pid) if USE_PS else None
         if (process == None):
             process = {}
             process["pid"] = pid
             process["uid"] = eventData["uid"]
             process["gid"] = eventData["gid"]
 
-        putVertex(process);
+        putVertex(process)
         processVertices[pid] = process
         ppid = process["ppid"] if "ppid" in process else None
         if ((ppid != None) and ppid in processVertices):
-            triggeredEdge = WasTriggeredBy(process, processVertices.get(ppid));
-            putEdge(triggeredEdge);
+            triggeredEdge = WasTriggeredBy(process, processVertices.get(ppid))
+            putEdge(triggeredEdge)
 
 def WasGeneratedBy(file, process):
     raise NotImplementedError
