@@ -5,6 +5,8 @@
 eventData = {}
 processVertices = set()
 fileVersions = {}
+GET_PS_NAME = False
+USE_PS = False
 
 def parseEventToken(line):
     # main loop
@@ -73,7 +75,7 @@ def parseEventToken(line):
     elif token_type in [35]:
         path = tokens[1]
         eventData["path" + str(pathCount)] = path
-        pathCount++
+        pathCount += 1
     elif token_type in [40]:
         text_string = tokens[1]
     elif token_type in [128,129]:
@@ -88,96 +90,89 @@ def parseEventToken(line):
 
 
 def processEvent(eventData):
-        pid = eventData.["pid"]
-"""
-        if (pid.equals(myPID) || pid.equals(nativePID)) {
-            return;
+    pid = eventData["pid"]
+    event_id = int(eventData["event_id"])
+    time = eventData["event_time"]
+    #Process thisProcess = processVertices.get(pid);
+    thisProcess = processVertices[pid]
+    #boolean put;
+
+    # exit
+    if event_id in [1]:
+        checkCurrentProcess()
+        processVertices.remove(pid)
+
+    # fork
+    if event_id in [2,25,241]:
+        checkCurrentProcess();
+        childPID = eventData["return_value"]
+        childProcess = createProcessVertex(childPID) if USE_PS else null
+        if (childProcess == null):
+            childProcess = {}
+            childProcess["pid"] = childPID
+            childProcess["ppid"] = pid
+            childProcess["uid"] = eventData["uid"]
+            childProcess["gid"] = eventData["gid"]
+
+        putVertex(childProcess)
+
+        processVertices[childPID] = childProcess
+
+        triggeredEdge = WasTriggeredBy(childProcess, thisProcess)
+        triggeredEdge["operation"] = "fork"
+        triggeredEdge["time"] = time
+        putEdge(triggeredEdge)
+
+    # open
+    elif event_id in [72]:
+        checkCurrentProcess()
+        readPath = eventData["path1"] if "path1" in eventData else eventData["path0"]
+        put = not readPath.replace("//", "/") in fileVersions.keys()
+        readFileArtifact = createFileVertex(readPath, false)
+        if (put):
+            putVertex(readFileArtifact)
+
+        readEdge = Used(thisProcess, readFileArtifact)
+        readEdge["time"] = time
+        putEdge(readEdge)
+
+    # open with read and creat/write/trunc
+    elif event_id in [73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83]:
+        checkCurrentProcess()
+        writePath = eventData["path1"] if "path1" in eventData else eventData["path0"]
+        writeFileArtifact = createFileVertex(writePath, true)
+        putVertex(writeFileArtifact)
+        generatedEdge = WasGeneratedBy(writeFileArtifact, thisProcess)
+        generatedEdge["time"] = time
+        putEdge(generatedEdge)
+
+    # rename
+    elif event_id in [42]:
+        checkCurrentProcess()
+        fromPath = eventData["path1"]
+        toPath = eventData["path2"]
+
+        """
+        if (!toPath.startsWith("/")):
+            toPath = fromPath.substring(0, fromPath.lastIndexOf("/")) + toPath;
         }
-"""
+        """
+        put = not fromPath.replace("//", "/") in fileVersions.keys()
+        fromFileArtifact = createFileVertex(fromPath, false)
+        if (put):
+            putVertex(fromFileArtifact)
 
-        event_id = int(eventData["event_id"])
-        time = eventData["event_time"]
-        #Process thisProcess = processVertices.get(pid);
-        thisProcess = processVertices[pid]
-        #boolean put;
-
-            # exit
-            if event_id in [1]:
-                checkCurrentProcess()
-                processVertices.remove(pid)
-
-            # fork
-            if event_id in [2,25,241]:
-                checkCurrentProcess();
-                childPID = eventData["return_value"]
-                childProcess = createProcessVertex(childPID) if USE_PS else null
-                if (childProcess == null):
-                    childProcess = {}
-                    childProcess["pid"] = childPID
-                    childProcess["ppid"] pid
-                    childProcess["uid"] = eventData.get("uid"));
-                    childProcess["gid"] = eventData.get("gid"));
-
-                putVertex(childProcess)
-
-                processVertices[childPID = childProcess
-                # WasTriggeredBy triggeredEdge = new WasTriggeredBy(childProcess, thisProcess);
-
-                triggeredEdge = WasTriggeredBy(childProcess, thisProcess)
-                triggeredEdge["operation"] = "fork"
-                triggeredEdge["time"] = time
-                putEdge(triggeredEdge)
-
-            # open
-            elif event_id in [72]:
-                checkCurrentProcess()
-                readPath = eventData["path1"] if "path1" in eventData else eventData["path0"]
-                put = !fileVersions.containsKey(readPath.replace("//", "/"));
-                readFileArtifact = createFileVertex(readPath, false)
-                if (put):
-                    putVertex(readFileArtifact)
-
-                readEdge = Used(thisProcess, readFileArtifact)
-                readEdge["time"] = time
-                putEdge(readEdge)
-
-            # open with read and creat/write/trunc
-            elif event_id in [73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83]:
-                checkCurrentProcess()
-                writePath = eventData["path1"] if "path1" in eventData else eventData["path0"]
-                writeFileArtifact = createFileVertex(writePath, true)
-                putVertex(writeFileArtifact)
-                generatedEdge = WasGeneratedBy(writeFileArtifact, thisProcess)
-                generatedEdge["time"] = time
-                putEdge(generatedEdge)
-
-            # rename
-            elif event_id in [42]:
-                checkCurrentProcess()
-                fromPath = eventData["path1"]
-                toPath = eventData["path2"]
-
-                """
-                if (!toPath.startsWith("/")):
-                    toPath = fromPath.substring(0, fromPath.lastIndexOf("/")) + toPath;
-                }
-                """
-                put = !fileVersions.containsKey(fromPath.replace("//", "/"));
-                fromFileArtifact = createFileVertex(fromPath, false)
-                if (put):
-                    putVertex(fromFileArtifact)
-
-                renameReadEdge = Used(thisProcess, fromFileArtifact)
-                renameReadEdge["time"] = time
-                putEdge(renameReadEdge)
-                toFileArtifact = createFileVertex(toPath, true)
-                putVertex(toFileArtifact)
-                renameWriteEdge = WasGeneratedBy(toFileArtifact, thisProcess)
-                renameWriteEdge["time"] = time)
-                putEdge(renameWriteEdge)
-                renameEdge = WasDerivedFrom(toFileArtifact, fromFileArtifact)
-                renameEdge["operation"] = "rename"
-                renameEdge["time"] = time)
+        renameReadEdge = Used(thisProcess, fromFileArtifact)
+        renameReadEdge["time"] = time
+        putEdge(renameReadEdge)
+        toFileArtifact = createFileVertex(toPath, true)
+        putVertex(toFileArtifact)
+        renameWriteEdge = WasGeneratedBy(toFileArtifact, thisProcess)
+        renameWriteEdge["time"] = time
+        putEdge(renameWriteEdge)
+        renameEdge = WasDerivedFrom(toFileArtifact, fromFileArtifact)
+        renameEdge["operation"] = "rename"
+        renameEdge["time"] = time
 
 def putVertex(vert):
     raise NotImplementedError
@@ -194,7 +189,7 @@ def createFileVertex(path, update):
         fileArtifact["filename"] = filename[len(filename) - 1]
 
     version = fileVersions[path] if fileVersions.containsKey(path) else 0
-    if update and path.startswith("/") and !path.startswith("/dev/"):
+    if update and path.startswith("/") and not path.startswith("/dev/"):
         version += 1
 
     fileArtifact["version"] = str(version)
