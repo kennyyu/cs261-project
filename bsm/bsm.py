@@ -1,21 +1,29 @@
 import networkx as nx
+from networkx.readwrite import json_graph
+import json
+
+import sys
 # modified from https://code.google.com/p/data-provenance/source/browse/trunk/SPADE/src/spade/reporter/OpenBSM.java
 
 
 eventData = {}
+DEBUG = False
 processVertices = {}
 fileVersions = {}
 GET_PS_NAME = False
-USE_PS = False
+USE_PS = True
 node_counter = 0
 process_node_map = {}
 file_node_map = {}
 graph = nx.DiGraph()
+pathCount = 0
 
 def parseEventToken(line):
+    global eventData
+    global pathCount
     # main loop
     tokens = line.split(',')
-    token_type = tokens[0]
+    token_type = int(tokens[0])
 
 
     if token_type in [20,21,116,121]:
@@ -91,23 +99,32 @@ def parseEventToken(line):
     ##    exit_value = tokens[2]
     elif token_type in [19]:
         processEvent(eventData)
+    elif DEBUG:
+        print "failed to parse line of type {}".format(token_type)
 
 
 def processEvent(eventData):
-    pid = eventData["pid"]
     event_id = int(eventData["event_id"])
+    if "pid" in eventData:
+        pid = eventData["pid"]
+    elif DEBUG:
+        print "no pid on event {}".format(event_id)
+        return
+    else:
+        return
     time = eventData["event_time"]
+    checkCurrentProcess()
     thisProcess = processVertices[pid]
 
     # exit
     if event_id in [1]:
         checkCurrentProcess()
-        processVertices.remove(pid)
+        del processVertices[pid]
         del process_node_map[pid]
 
     # fork
     if event_id in [2,25,241]:
-        checkCurrentProcess();
+        checkCurrentProcess()
         childPID = eventData["return_value"]
         childProcess = createProcessVertex(childPID) if USE_PS else None
         if (childProcess == None):
@@ -131,7 +148,7 @@ def processEvent(eventData):
         checkCurrentProcess()
         readPath = eventData["path1"] if "path1" in eventData else eventData["path0"]
         put = not readPath.replace("//", "/") in fileVersions.keys()
-        readFileArtifact = createFileVertex(readPath, false)
+        readFileArtifact = createFileVertex(readPath, False)
         if (put):
             putFileVertex(readFileArtifact)
 
@@ -143,7 +160,7 @@ def processEvent(eventData):
     elif event_id in [73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83]:
         checkCurrentProcess()
         writePath = eventData["path1"] if "path1" in eventData else eventData["path0"]
-        writeFileArtifact = createFileVertex(writePath, true)
+        writeFileArtifact = createFileVertex(writePath, True)
         putFileVertex(writeFileArtifact)
         generatedEdge = WasGeneratedBy(writeFileArtifact, thisProcess)
         generatedEdge["time"] = time
@@ -161,14 +178,14 @@ def processEvent(eventData):
         }
         """
         put = not fromPath.replace("//", "/") in fileVersions.keys()
-        fromFileArtifact = createFileVertex(fromPath, false)
+        fromFileArtifact = createFileVertex(fromPath, False)
         if (put):
             putFileVertex(fromFileArtifact)
 
         renameReadEdge = Used(thisProcess, fromFileArtifact)
         renameReadEdge["time"] = time
         putEdge(renameReadEdge)
-        toFileArtifact = createFileVertex(toPath, true)
+        toFileArtifact = createFileVertex(toPath, True)
         putFileVertex(toFileArtifact)
         renameWriteEdge = WasGeneratedBy(toFileArtifact, thisProcess)
         renameWriteEdge["time"] = time
@@ -178,15 +195,28 @@ def processEvent(eventData):
         renameEdge["time"] = time
 
 def putFileVertex(vert):
+    global file_node_map, node_counter
     vert["type"] = "file"
     vert["node_number"] = node_counter
     file_node_map[(vert["path"])] = node_counter
+    graph.add_node(node_counter)
+    # add attrs
+    for k in vert:
+        graph.node[node_counter][k] = vert[k]
     node_counter += 1
 def putProcessVertex(vert):
+    global process_node_map, node_counter, graph
     vert["type"] = "process"
     process_node_map[vert["pid"]] = node_counter
     vert["node_number"] = node_counter
+
+    graph.add_node(node_counter)
+    # add attrs
+    for k in vert:
+        graph.node[node_counter][k] = vert[k]
     node_counter += 1
+
+
 def WasTriggeredBy(child, parent):
     # get node number for process
     child_node_num = process_node_map[child["pid"]]
@@ -195,19 +225,25 @@ def WasTriggeredBy(child, parent):
     edge["from"] = child_node_num
     edge["to"] = parent_node_num
     edge["type"] = "triggered by"
+    return edge
 def putEdge(edge):
     graph.add_edge(edge["from"], edge["to"])
     graph[edge["from"]][edge["to"]]["type"] = edge["type"]
+
+    # add additional key/value pairs
+    for k in edge:
+        graph[edge["from"]][edge["to"]][k] = edge[k]
+
 
 def createFileVertex(path, update):
     fileArtifact = {}
     path = path.replace("//", "/");
     fileArtifact["path"] = path
     filename = path.split("/");
-    if (filename.length > 0):
+    if (len(filename) > 0):
         fileArtifact["filename"] = filename[len(filename) - 1]
 
-    version = fileVersions[path] if fileVersions.containsKey(path) else 0
+    version = fileVersions[path] if path in fileVersions.keys() else 0
     if update and path.startswith("/") and not path.startswith("/dev/"):
         version += 1
 
@@ -243,7 +279,7 @@ def checkCurrentProcess():
             triggeredEdge = WasTriggeredBy(process, processVertices.get(ppid))
             putEdge(triggeredEdge)
 
-def WasGeneratedBy(file, process):
+def WasGeneratedBy(file, proc):
     # get node number for process
     proc_node_num = process_node_map[proc["pid"]]
     file_node_num = file_node_map[file["path"]]
@@ -278,4 +314,15 @@ def createProcessVertex(pid):
     processVertex["pid"] = pid
 
     return processVertex
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print "Usage: python bsm.py bsmfile"
+        sys.exit()
+    with open(sys.argv[1]) as f:
+        for line in f:
+            parseEventToken(line)
+    data = json_graph.node_link_data(graph)
+    s = json.dumps(data)
+    print s
 
