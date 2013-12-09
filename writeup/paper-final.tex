@@ -19,7 +19,7 @@
 
 \usepackage[margin=1in]{geometry}
 
-\title{{\bf Intrusion Detection using Provenance Graph Centrality Parzen-Windows}}
+\title{{\bf Intrusion Detection using Parzen-Windows on Provenance Graph Statistics}}
 \author{
     Kenny Yu\\
     Harvard University\\
@@ -59,7 +59,53 @@ to extend our intrusion model to an online intrusion detection system.
 
 \section{Introduction}
 
+For as long as systems have existed, there have been malicious users that attempt to exploit vulnerabilities
+in systems to gain unintended privileged access. As a result, system designers and 
+administrators place a large effort in securing systems and preventing intrusions. However, intrusions
+inevitably occur because of bugs or flaws within the system, and as a result, system administrators want to
+have some automatic way of detecting these intrusions. 
 
+Intrusions often leave behind digital artifacts, e.g., unusual output or log files, a process executed
+with an unusual arguments or environment, unusual system call activity by a process. In addition to
+unusual digital artifacts, we hypothesize that
+intrusions also intrusions leave behind abnormalities
+in the {\em provenance} of these digital artifacts, the lineage of how these digital artifacts were created.
+
+Provenance is data that describes how digital artifacts
+came to be in their current state. Provenance data is typically structured as a directed acyclic graph with
+typed nodes and typed edges.
+Nodes typically include processes and files, and edges are directed from nodes to their dependencies. For example,
+process nodes have edges directed towards input file nodes and to the parent process's node, and
+file nodes have edges directed towards previous versions of the file and to the nodes of the
+processes that modified the file.
+
+Existing intrusion detection systems (IDS) have used provenance data only to a limited extent.
+??? person analyzes
+basic statistics on provenance graphs (e.g., number of nodes, number of edges, ... TODO) in order to facilitate
+easier manual intrusion detection by a human (CITE WORK). Their work, however, does not present a way of using provenance
+graph to automatically determine intrusions. Other systems use provenance data to determine the scope of an
+intrusion. For example, ??? Tariq use provenance graphs to build causality graphs of intrusions: once they have
+determined an intrusion has occurred, they follow the causality graph backwards determine the original source of the attack, and 
+they follow the causality graph forwards to determine all the objects tainted by the attack (CITE WORK). However, they also
+do not present a way of using provenance data to automatically detect intrusions.
+
+
+INSERT PROVENANCE GRAPH SMALL EXAMPLE HERE SHOWING DATA FLOW
+
+In this paper, we present an intrusion detection approach using Parzen-Windows density estimation. ???? have used
+Parzen-Windows for intrusion detection with a high degree of success in identifying various intrusion types (CITE WORK).
+They justify using Parzen-Windows for
+{\em novelty detection} when access to novel or abnormal patterns is difficult to obtain, as is the case with
+intrusions. We borrow their Parzen-Windows approach to build models of normal behavior using 
+various provenance graph statistics and graph centrality metrics, and we evaluate the success of this technique
+on {\em user-to-local} (u2l) intrusions, intrusions that provide unauthorized access to local superuser (root) privileges. 
+
+The main contributions of this paper are the following:
+\begin{enumerate}
+\item Discuss which provenance graph statistics we chose to use, how we chose them, and why we chose them.
+\item Analyze the Parzen-Window technique on a real intrusion detection data set and evaluate its performance.
+\item Discuss the limitations of the approach and present future work to transform the technique into an online intrusion detection system.
+\end{enumerate}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
