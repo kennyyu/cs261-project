@@ -79,24 +79,28 @@ process nodes have edges directed towards input file nodes and to the parent pro
 file nodes have edges directed towards previous versions of the file and to the nodes of the
 processes that modified the file.
 
-Existing intrusion detection systems (IDS) have used provenance data only to a limited extent.
+Existing intrusion detection systems (IDS) use provenance data only to a limited extent.
 ??? person analyzes
 basic statistics on provenance graphs (e.g., number of nodes, number of edges, ... TODO) in order to facilitate
 easier manual intrusion detection by a human (CITE WORK). Their work, however, does not present a way of using provenance
 graph to automatically determine intrusions. Other systems use provenance data to determine the scope of an
-intrusion. For example, ??? Tariq use provenance graphs to build causality graphs of intrusions: once they have
-determined an intrusion has occurred, they follow the causality graph backwards determine the original source of the attack, and 
-they follow the causality graph forwards to determine all the objects tainted by the attack (CITE WORK). However, they also
+intrusion. For example, Backtracker (CITE WORK) uses provenance graphs to build causality graphs of intrusions: once the
+system has
+determined an intrusion has occurred, the system follow the causality graph backwards determine the original source of the attack, and 
+then it follow the causality graph forwards to determine all the objects tainted by the attack. However, the authors 
 do not present a way of using provenance data to automatically detect intrusions.
 
 
 INSERT PROVENANCE GRAPH SMALL EXAMPLE HERE SHOWING DATA FLOW
 
-In this paper, we present an intrusion detection approach using Parzen-Windows density estimation. ???? have used
-Parzen-Windows for intrusion detection with a high degree of success in identifying various intrusion types (CITE WORK).
-They justify using Parzen-Windows for
-{\em novelty detection} when access to novel or abnormal patterns is difficult to obtain, as is the case with
-intrusions. We borrow their Parzen-Windows approach to build models of normal behavior using 
+In this paper, we present an approach to use provenance data to automatically detect intrusions. Intrusion
+detection can be framed as a {\em novelty detection} problem, in which one attempts to decide whether
+an unknown test pattern is produced by an underlying distribution corresponding to a training set
+of normal patterns (CITE WORK). However, ???authors note that in the case of intrusion detection, novel
+or abnormal patterns are typically difficult to obtain, and as a result, they present a {\em Parzen-Window} approach
+for non-parametric density estimation. Using this technique, they obtain a high degree of success
+in identifying various intrusion types (CITE WORK). Because obtaining abnormal patterns is difficult, 
+we borrow their Parzen-Window approach to build models of normal behavior using 
 various provenance graph statistics and graph centrality metrics, and we evaluate the success of this technique
 on {\em user-to-local} (u2l) intrusions, intrusions that provide unauthorized access to local superuser (root) privileges. 
 
@@ -113,6 +117,8 @@ The main contributions of this paper are the following:
 %
 
 \section{Related Work}
+
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
