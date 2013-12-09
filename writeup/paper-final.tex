@@ -91,7 +91,7 @@ then it follow the causality graph forwards to determine all the objects tainted
 do not present a way of using provenance data to automatically detect intrusions.
 
 
-INSERT PROVENANCE GRAPH SMALL EXAMPLE HERE SHOWING DATA FLOW
+>>> INSERT PROVENANCE GRAPH SMALL EXAMPLE HERE SHOWING DATA FLOW
 
 In this paper, we present an approach to use provenance data to automatically detect intrusions. Intrusion
 detection can be framed as a {\em novelty detection} problem, in which one attempts to decide whether
@@ -102,7 +102,8 @@ for non-parametric density estimation. Using this technique, they obtain a high 
 in identifying various intrusion types (CITE WORK). Because obtaining abnormal patterns is difficult, 
 we borrow their Parzen-Window approach to build models of normal behavior using 
 various provenance graph statistics and graph centrality metrics, and we evaluate the success of this technique
-on {\em user-to-local} (u2l) intrusions, intrusions that provide unauthorized access to local superuser (root) privileges. 
+on {\em user-to-local} (u2l) intrusions (intrusions that provide unauthorized access to local superuser (root) privileges),
+and {\em remote-to-local} (r2l) intrusions (intrusions that provide unauthorized access from a remote machine).
 
 The main contributions of this paper are the following:
 \begin{enumerate}
@@ -118,6 +119,32 @@ The main contributions of this paper are the following:
 
 \section{Related Work}
 
+\subsection{Existing IDSs}
+
+inspiration
+- novelty detection problem with intrusion detection
+- somayaji use sequences of system calls
+- system calls and BSM data can be used to build provenance graphs; we believe that
+provenance graphs provide more information than somayaji and can help detect
+intrusions with better results
+
+use provenance to automatically detect intrusions
+- existing machine learning techniques on KDD data set: use features of an intrusion (number of data)
+- but not actually using graph structure
+- parzen window--allow us to build a profile of normal with lack of abnormal examples
+
+\subsection{Provenance Graph Features}
+
+how we choose features to look at
+- basic statistics for manual detection
+- graph centrality and clustering can help us identify the different kinds of tasks running
+- use these metrics for kernel estimation and 
+
+\subsection{Types of Intrusions}
+
+we limit our work to these intrusions
+- explain various kinds
+- why just user 2 local
 
 
 
@@ -128,6 +155,10 @@ The main contributions of this paper are the following:
 \section{Design and Implementation}
 
 \subsection{Selecting Metrics}
+
+talk about PASS and SPADE here.
+
+put that table here
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % EVALUATION
@@ -146,7 +177,9 @@ The main contributions of this paper are the following:
 % CONCLUSION
 %
 
-\section{Future Work}
+\section{Conclusion}
+
+\section{Limitations \& Future Work}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
