@@ -302,7 +302,7 @@ def loadPidInfo():
     ps_info, cur_ps_time = ps.next_info()
 
 def getPidInfo(pid):
-    print ps_info
+    #print ps_info
     if pid in ps_info:
         return ps_info[pid]
     else:
@@ -316,15 +316,28 @@ def createProcessVertex(pid):
 
     return processVertex
 
+def save(G, fname):
+    json.dump(dict(nodes=[[n, G.node[n]] for n in G.nodes()],
+                   edges=[[u, v, G.edge[u][v]] for u,v in G.edges()]),
+              open(fname, 'w'), indent=2)
+
+def load(fname):
+    G = nx.DiGraph()
+    d = json.load(open(fname))
+    G.add_nodes_from(d['nodes'])
+    G.add_edges_from(d['edges'])
+    return G
+
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print "Usage: python bsm.py bsmfile pself"
+    if len(sys.argv) < 4:
+        print "Usage: python bsm.py bsmfile pself outfile"
         sys.exit()
     ps.setup(sys.argv[2])
     with open(sys.argv[1]) as f:
         for line in f:
             parseEventToken(line)
-    data = json_graph.node_link_data(graph)
-    s = json.dumps(data)
-    print s
+    #data = json_graph.node_link_data(graph)
+    #s = json.dumps(data)
+    #print s
+    save(graph, sys.argv[3])
 

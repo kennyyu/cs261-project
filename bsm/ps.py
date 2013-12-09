@@ -5,6 +5,9 @@ PID_LOC = 15
 PPID_LOC = 21
 CMD_POS = 84
 
+PID_LOC = 10
+CMD_POS = 61
+
 def setup(ps_filename):
     global f,next_date_line
     f = open(ps_filename)
@@ -24,11 +27,11 @@ def next_info():
             return info, timestamp
         info_obj = {}
         pid = int(line[PID_LOC:PID_LOC+4].strip())
-        ppid = int(line[PPID_LOC:PPID_LOC+4].strip())
+        #ppid = int(line[PPID_LOC:PPID_LOC+4].strip())
         cmd_line = line[CMD_POS:]
 
         info_obj["pid"] = pid
-        info_obj["ppid"] = ppid
+        #info_obj["ppid"] = ppid
         info_obj["cmd"] = cmd_line.split()[0]
         info_obj["timestamp"] = timestamp
 
