@@ -33,6 +33,7 @@ def next_info():
         info_obj["pid"] = pid
         #info_obj["ppid"] = ppid
         info_obj["cmd"] = cmd_line.split()[0]
+#        print info_obj
         info_obj["timestamp"] = timestamp
 
         info[pid] = info_obj

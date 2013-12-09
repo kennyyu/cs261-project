@@ -43,8 +43,8 @@ def parseEventToken(line):
         eventData["event_time"] = date_time + offset_msec
 
         # if event occurred after current date_time, load new ps_data
-        if int(date_time) > cur_ps_time:
-            loadPidInfo()
+        #while int(date_time) > cur_ps_time:
+        #    loadPidInfo()
     elif token_type in [36, 122, 117, 124]:
         ##user_audit_id = tokens[1]
         euid = tokens[2]
@@ -72,7 +72,6 @@ def parseEventToken(line):
         ##process_device_id = tokens[8]
         ##process_machine_id = tokens[9]
 
-
     elif token_type in [39, 114]:
         ##error = tokens[1]
         return_value = tokens[2].strip()
@@ -93,6 +92,9 @@ def parseEventToken(line):
     ##    arg_text = tokens[3]
     elif token_type in [35]:
         path = tokens[1].strip()
+        if int(eventData["event_id"]) == 23:
+            print eventData
+            graph.node[process_node_map[eventData["pid"]]]["cmd"] = path
         eventData["path" + str(pathCount)] = path
         pathCount += 1
     ##elif token_type in [40]:
@@ -149,6 +151,8 @@ def processEvent(eventData):
         triggeredEdge["operation"] = "fork"
         triggeredEdge["time"] = time
         putEdge(triggeredEdge)
+
+    # exec
 
     # open
     elif event_id in [72]:
@@ -302,7 +306,11 @@ def loadPidInfo():
     ps_info, cur_ps_time = ps.next_info()
 
 def getPidInfo(pid):
-    #print ps_info
+#    pid = int(pid)
+#    while pid not in ps_info:
+#        loadPidInfo()
+#        if len(ps_info) == 0:
+#            break
     if pid in ps_info:
         return ps_info[pid]
     else:
@@ -313,6 +321,22 @@ def createProcessVertex(pid):
     if GET_PS_NAME:
         processVertex = getPidInfo(pid)
     processVertex["pid"] = pid
+    cmd = ""
+    if int(pid) in ps_info:
+        if "cmd" in ps_info[int(pid)]:
+            cmd = ps_info[int(pid)]["cmd"]
+#    if cmd != "sched" and cmd != "":
+#        print pid, cmd
+
+    """
+    if cmd == "":
+        print ""
+        print pid
+        for k,v in sorted(ps_info.items(), key=lambda (k,v) : k):
+            print k,v
+        print ""
+    """
+    #processVertex["cmd"] = cmd
 
     return processVertex
 
