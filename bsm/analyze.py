@@ -1,5 +1,6 @@
 from collections import defaultdict
 import networkx as nx
+import numpy as np
 import matplotlib.pyplot as plt
 import json
 import sys
@@ -83,7 +84,10 @@ if __name__ == "__main__":
     for name in values:
         # iterate over functions
         for f in values[name]:
-            kdes[name][f] = histogram.kde_make(values[name][f])
+            # get variance of values, for bandwidth
+            variance = np.var(values[name][f])
+            bw = np.abs(variance) if variance != 0 else 0.5
+            kdes[name][f] = histogram.kde_make(values[name][f], bw=bw)
     print kdes
 
 
