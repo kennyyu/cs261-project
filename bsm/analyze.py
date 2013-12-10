@@ -7,13 +7,14 @@ import matplotlib.pyplot as plt
 import json
 import sys
 import bsm
+import bsm_list
 import histogram
 
 # functions to run on the graph (and aggregate results by node type)
 FUNCTIONS = {
         "opsahl": histogram.centrality_opsahl,
-        "indegree": histogram.centrality_in_degree,
-        "ancestor": histogram.centrality_ancestor
+        #"indegree": histogram.centrality_in_degree,
+        #"ancestor": histogram.centrality_ancestor
         }
 
 def process_counts(g):
@@ -85,6 +86,13 @@ def parzen_is_expected(x, vals, ll_ys, psi):
     return pred > psi, pred
 
 
+def sufficient(num_intrusions, num_normal):
+    """
+    Returns true if marking as intrusion
+    TODO
+    """
+    return num_intrusions > num_normal
+
 def get_candidate_set(g, w, t):
     """
     Returns set of node indicies that have edges that have timestamps in [t-w, t+w]
@@ -95,20 +103,47 @@ def get_candidate_set(g, w, t):
         if "time" in g[u][v]:
             timestamp = int(g[u][v]["time"]) / (10**9)
             if timestamp > t-w and timestamp < t+w:
-                nodes.add(u)
-                nodes.add(v)
+                if g.node[u]["type"] == "process" and g.node[u]["cmd"] != "UNKNOWN":
+                    nodes.add(u)
+                if g.node[v]["type"] == "process" and g.node[v]["cmd"] != "UNKNOWN":
+                    nodes.add(v)
     return nodes
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print "Usage: python analyze.py json-file"
+    if len(sys.argv) < 3:
+        print "Usage: python analyze.py graph.txt bsm.list"
         sys.exit()
 
     datafile = sys.argv[1]
+    bsmlistfile = sys.argv[2]
     print "datafile: ", datafile
 
+    print "Loading graph..."
     g = bsm.load(datafile)
+
+    print "Num nodes: {}, num edges: {}".format(len(g.nodes()), len(g.edges()))
+
+    print "Parsing bsm list..."
+    bsm_rows = bsm_list.parse_bsm_list(bsmlistfile)
+    u2r_rows = [row for row in bsm_rows if row["type"] == "u2r"]
+    none_rows = [row for row in bsm_rows if row["type"] == "none"]
+
+    print "Found {} u2r, {} none".format(len(u2r_rows), len(none_rows))
+
+    # vars to store results
+    """
+    true positive -> you are an intrusion and we flagged you
+    false negative -> you are an intrusion and we did not flag
+    false positive -> you are not an intrusion and we flagged you
+    true negative -> you are not an intrusion and we did not flag
+    keyed on psi
+    """
+    true_positive = defaultdict(int)
+    false_negative = defaultdict(int)
+    false_positive = defaultdict(int)
+    true_negative = defaultdict(int)
+
 
     # preprocess nodes, giving each a cmd of "UNKNOWN" if none provided
     for num in g.nodes():
@@ -119,10 +154,12 @@ if __name__ == "__main__":
 
     # get values
     # name => function => list of values
+    print "Computing centrality metrics..."
     values = get_values(g, FUNCTIONS)
 
 
     # compute the log probs in advance
+    print "Computing log probs..."
     log_probs = {}
     for name in values:
         log_probs[name] = {}
@@ -141,22 +178,42 @@ if __name__ == "__main__":
             # store the SORTED log probs (for quick lookup later)
             log_probs[name][f] = sorted(ll_y)
 
-    # try out an example, using opsahl and the program with the most entries
-    # just a quick example
-    """
-    max = (0, None)
-    for name in values:
-        if len(values[name]["opsahl"]) > max[0] and name != "UNKNOWN":
-            max = (len(values[name]["opsahl"]), name)
+    W = 100
+    PSIS = [0.01, 0.1, 0.2, 0.5, 0.9]
 
-    print "Evaluating {}".format(max[1])
-    prog = max[1]
+    print "Deciding u2r..."
+    # iterate over u2r rows
+    for row in u2r_rows:
+        t = row["timestamp"]
+        psi_to_count = candidate_set_decisions(g, t, W, "opsahl", PSIS)
+        for psi in psi_to_count:
+            if sufficient(psi_to_count[psi]["intrusions"], psi_to_count[psi]["normal"]):
+                true_positive[psi] += 1
+            else:
+                false_negative[psi] += 1
 
-    # example starts here
-    vals = values[prog]["opsahl"]
-    ll_y = log_probs[prog]["opsahl"]
-    print vals
-    """
+    print "Deciding none..."
+    # iterate over normal rows
+    for row in none_rows:
+        t = row["timestamp"]
+        psi_to_count = candidate_set_decisions(g, t, W, "opsahl", PSIS)
+        for psi in psi_to_count:
+            if sufficient(psi_to_count[psi]["intrusions"], psi_to_count[psi]["normal"]):
+                false_positive[psi] += 1
+            else:
+                true_negative[psi] += 1
+
+    print "True positive:"
+    print true_positive
+
+    print "False positive:"
+    print false_positive
+
+    print "True negative:"
+    print true_negative
+
+    print "False negative:"
+    print false_negative
 
 def candidate_set_decisions(g, t, w, metric, psis):
     """
