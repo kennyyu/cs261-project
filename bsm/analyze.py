@@ -150,7 +150,7 @@ if __name__ == "__main__":
         print "Usage: python analyze.py graph.txt bsm.list [W]"
         sys.exit()
     if len(sys.argv) > 3:
-        W = sys.argv[3]
+        W = int(sys.argv[3])
 
     datafile = sys.argv[1]
     bsmlistfile = sys.argv[2]
