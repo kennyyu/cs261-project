@@ -15,6 +15,17 @@
 %\usepackage[framed,numbered,autolinebreaks,useliterate]{mcode}
 %\usepackage{mathabx}
 
+% my macros
+\newcommand{\paren}[1]{\left({#1}\right)}
+\newcommand{\bracket}[1]{\left[{#1}\right]}
+\newcommand{\curly}[1]{\left\{{#1}\right\}}
+\newcommand{\vecb}[1]{\mathbf{#1}}
+\newcommand{\matb}[1]{\mathbf{#1}}
+\newcommand{\V}[1]{\mathbf{#1}}
+\newcommand{\m}[1]{\mathbf{#1}}
+\newcommand{\inhomog}[1]{\widetilde{#1}}
+\newcommand{\transpose}[1]{{#1}^\top}
+
 \usepackage{float}
 
 \usepackage[margin=1in]{geometry}
@@ -68,7 +79,7 @@ have some automatic way of detecting these intrusions.
 Intrusions often leave behind digital artifacts, e.g., unusual output or log files, a process executed
 with an unusual arguments or environment, unusual system call activity by a process. In addition to
 unusual digital artifacts, we hypothesize that
-intrusions also intrusions leave behind abnormalities
+intrusions also leave behind abnormalities
 in the {\em provenance} of these digital artifacts, the lineage of how these digital artifacts were created.
 
 Provenance is data that describes how digital artifacts
@@ -86,8 +97,8 @@ easier manual intrusion detection by a human (CITE WORK). Their work, however, d
 graph to automatically determine intrusions. Other systems use provenance data to determine the scope of an
 intrusion. For example, Backtracker (CITE WORK) uses provenance graphs to build causality graphs of intrusions: once the
 system has
-determined an intrusion has occurred, the system follow the causality graph backwards determine the original source of the attack, and 
-then it follow the causality graph forwards to determine all the objects tainted by the attack. However, the authors 
+determined an intrusion has occurred, the system follows the causality graph backwards determine the original source of the attack, and 
+then it follows the causality graph forwards to determine all the objects tainted by the attack. However, the authors 
 do not present a way of using provenance data to automatically detect intrusions.
 
 
@@ -108,9 +119,14 @@ and {\em remote-to-local} (r2l) intrusions (intrusions that provide unauthorized
 The main contributions of this paper are the following:
 \begin{enumerate}
 \item Discuss which provenance graph statistics we chose to use, how we chose them, and why we chose them.
-\item Analyze the Parzen-Window technique on a real intrusion detection data set and evaluate its performance.
+\item Analyze the Parzen-Window technique with various provenance graph statistics on a real intrusion detection data set and evaluate its performance.
 \item Discuss the limitations of the approach and present future work to transform the technique into an online intrusion detection system.
 \end{enumerate}
+
+POSSIBLY INCLUDE THIS
+* the papers suck at finding u2r
+* because they don't look at provenance graph structure
+* we can do better?
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -120,6 +136,58 @@ The main contributions of this paper are the following:
 \section{Related Work}
 
 \subsection{Existing IDSs}
+
+Many existing intrusion detection systems have made use of the fact that intrusion detection is an example of a
+{\em novelty detection} problem where access to novel or abnormal patterns is difficult to obtain. Somayaji and Forrest
+attempt to solve this problem by analyzing sequences of system calls (CITE WORK). By analyzing the sequences
+of system calls a process makes over time, their system builds a profile of ``normal" process behavior. When
+the process in the future makes enough patterns of unrecognized sequences of system calls, the system flags
+this process as behaving abnormally and attempts to stop the process, either through exponentially slowing down
+system calls or aborting system calls entirely. Notably, their system is trained only by analyzing ``normal" data
+without knowing explicitly what is considered ``abnormal." 
+
+
+
+\subsection{Parzen-Windows}
+
+??? person attempt to solve the lack of abnormal patterns problem by using Parzen-Windows to build {\em nonparametric}
+density estimations of normal behavior (CITE). A density estimation is considered {\em nonparametric} if the estimation
+makes no assumptions about the forms of the PDFs, except that PDFs are smooth. By using a nonparametric
+density estimation, one can build a probability density estimate of normal behavior by only having examples of normal
+behavior and no examples of abnormal behavior.
+
+A {\em Parzen-window} estimate of a probability density function $p(\m(x))$
+based on $n$ examples in a dataset $D$ drawn from model $\mathcal{M}$ is given by:
+$$p(\m{x}) = \frac{1}{n} \sum_{i=1}^n \delta_n (\m{x} - \m{x_i})$$
+where $\delta_n(\cdot)$ is a kernel function. They chose to use radially-symmetric Gaussian kernel functions because
+Gaussian functions are smooth and therefore $p(\m{x})$ will be smooth, and because a radially-symmetric Gaussian function
+can be specified by a single parameter, the variance of the kernel. Using a common variance $\sigma^2$ for all
+the Gaussian kernels, we can rewrite $p(\m{x})$ as:
+$$p(\m{x}) = \frac{1}{n(2\pi)^{d/2} \sigma^d} \sum_{i=1}^n  \exp \left\{  - \frac{|| \m{x} - \m{x_i}||^2}{2 \sigma^2}  \right\}$$
+where $d$ is the dimensionality of the feature space $\m{x}$.
+
+Let $\omega_1$ denote the state of being normal and $\omega_0$ the state of being abnormal.
+To test if an example $\m{x} \in \omega_1$, they reframe the problem using hypothesis testing. Let $\m{y}$ be
+an arbitrary example from $D$ drawn from $\mathcal{M}$, and let 
+$$L(\m{y}) = \log p(\m{y})$$
+be the log-likelihood of $\m{y}$ with respect to $\mathcal{M}$. Then we test the hypothesis that
+$L(\m{x})$ is drawn from the distribution of the log-likelihood of the random examples in $D$ with:
+\begin{eqnarray*}
+P(L(\m{y}) \leq L(\m{x})) 
+&=&  \frac{\#\m{y} \mbox { with } L(\m{y}) \leq L(\m{x})}{n} \\
+&>& \psi
+\end{eqnarray*}
+for some threshold $0 \leq \psi \leq 1$, called the {\em false detection rate}. 
+Thus, $\m{x} \in \omega_1$ is behaving normally if and only if $P(L(\m{y}) \leq L(\m{x})) > \psi$. 
+
+In this paper, we use this same model to build profiles of ``normal" behavior for each process. We use
+one-dimensional feature vectors $x$, and we use various provenance graph statistics and graph
+centrality metrics as our features. For the common variance of our Gaussian kernels, we chose
+the variance to be the variance of the data set $D$ for each unique process name. 
+We vary the features we used and values of $\psi$ and evaluate its performance on an intrusion detection data set.
+
+
+%%% IGNORE BELOW
 
 inspiration
 - novelty detection problem with intrusion detection
@@ -132,6 +200,11 @@ use provenance to automatically detect intrusions
 - existing machine learning techniques on KDD data set: use features of an intrusion (number of data)
 - but not actually using graph structure
 - parzen window--allow us to build a profile of normal with lack of abnormal examples
+  explain the math of this
+  
+  we limit our work to these intrusions
+- explain various kinds
+- why just user 2 local
 
 \subsection{Provenance Graph Features}
 
@@ -139,12 +212,6 @@ how we choose features to look at
 - basic statistics for manual detection
 - graph centrality and clustering can help us identify the different kinds of tasks running
 - use these metrics for kernel estimation and 
-
-\subsection{Types of Intrusions}
-
-we limit our work to these intrusions
-- explain various kinds
-- why just user 2 local
 
 
 
