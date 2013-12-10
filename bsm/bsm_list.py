@@ -28,7 +28,8 @@ TYPE_MAPPING = {
         "teardrop": "dos",
         "warez":  "r2l",
         "warezclient": "r2l",
-        "warezmaster": "r2l"
+        "warezmaster": "r2l",
+        "-": "none"
 }
 
 def parse_row(line):
@@ -37,7 +38,7 @@ def parse_row(line):
     obj["id"] = row[0]
     full_time_str = row[1] + ' ' + row[2]
     obj["timestamp"] = time.mktime(time.strptime(full_time_str, "%m/%d/%Y %H:%M:%S"))
-    obj["name"] = row[4]
+    obj["name"] = row[10]
     if obj["name"] not in TYPE_MAPPING:
         #print "Unknown type {}".format(obj["name"])
         obj["type"] = "unknown"
