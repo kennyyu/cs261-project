@@ -1,6 +1,7 @@
 from collections import defaultdict
 from random import shuffle
 import bisect
+import operator
 import networkx as nx
 import numpy as np
 import math
@@ -184,10 +185,11 @@ if __name__ == "__main__":
     true negative -> you are not an intrusion and we did not flag
     keyed on psi
     """
-    true_positive = defaultdict(int)
-    false_negative = defaultdict(int)
-    false_positive = defaultdict(int)
-    true_negative = defaultdict(int)
+    PSIS = [0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    true_positive = dict((k,0) for k in PSIS)
+    false_negative = dict((k,0) for k in PSIS)
+    false_positive = dict((k,0) for k in PSIS)
+    true_negative = dict((k,0) for k in PSIS)
 
 
     # preprocess nodes, giving each a cmd of "UNKNOWN" if none provided
@@ -201,7 +203,6 @@ if __name__ == "__main__":
     # name => function => list of values
     print "Computing centrality metrics..."
     values = get_values(g, FUNCTIONS)
-    print values
 
 
     # compute the log probs in advance
@@ -225,7 +226,6 @@ if __name__ == "__main__":
             log_probs[name][f] = sorted(ll_y)
 
     W = 100
-    PSIS = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
     print "Deciding u2r..."
     # iterate over u2r rows
@@ -242,7 +242,6 @@ if __name__ == "__main__":
     print "Deciding none..."
     # iterate over normal rows
     for row in none_rows:
-        print row
         t = row["timestamp"]
         psi_to_count = candidate_set_decisions(g, t, W, "opsahl", PSIS)
         print psi_to_count
@@ -253,16 +252,24 @@ if __name__ == "__main__":
                 true_negative[psi] += 1
 
     print "True positive:"
-    print true_positive
+    sorted_x = sorted(true_positive.iteritems(), key=operator.itemgetter(0))
+    for t in sorted_x:
+        print "{}: {}".format(t[0], t[1])
 
     print "False positive:"
-    print false_positive
+    sorted_x = sorted(false_positive.iteritems(), key=operator.itemgetter(0))
+    for t in sorted_x:
+        print "{}: {}".format(t[0], t[1])
 
     print "True negative:"
-    print true_negative
+    sorted_x = sorted(true_negative.iteritems(), key=operator.itemgetter(0))
+    for t in sorted_x:
+        print "{}: {}".format(t[0], t[1])
 
     print "False negative:"
-    print false_negative
+    sorted_x = sorted(false_negative.iteritems(), key=operator.itemgetter(0))
+    for t in sorted_x:
+        print "{}: {}".format(t[0], t[1])
 
 
 """
