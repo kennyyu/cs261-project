@@ -28,7 +28,7 @@
 
 \usepackage{float}
 
-\usepackage[margin=0.7in]{geometry}
+\usepackage[margin=1in]{geometry}
 
 \title{{\bf Intrusion Detection using Parzen-Windows on Provenance Graph Statistics}}
 \author{
@@ -301,8 +301,6 @@ In the exploited workloads, we used Orbiter (CITE) to find the abnormally behavi
 
 \subsection{Simulated Intrusions}
 
-Below is a list of the intrusions we simulated.
-
 \subsubsection{hello}
 We found that many of the popular exploits involved buffer overflows and arbitrary code execution and possibly obtain root access. We created a simple \texttt{hello} program that echos standard in to standard out, and we gave it a buffer overflow vulnerability that allows a malicious user to fork a shell.
 
@@ -331,9 +329,37 @@ Below is the list of simple provenance graph statistics we implemented:
 We also implemented the indegree, Opsahl, and ancestor centrality metrics.
 We chose not to implement the Provenance Eigenvector Centrality because computing
 the eigenvectors of the large matrix took too much computation time on our machines.
+We also chose not to implement age because age would make our data too dependent
+on how quickly we executed our workloads.
 
-USE FIRST PAPER's RESULTS HERE to describe which metrics we should use.
+\begin{table*}[ht]
+\label{results}
+{\small
+  \begin{center}
+  \begin{tabular}{| l | l | l | l |}
+    \hline
+    statistic & hello & mcrypt & gcc \\ \hline
+     \# forked processes & 0.0 | 1 | 0.108 & 0.0 | 1 | 0.107 & 0.9 | 0 | 0.408 \\ \hline
+     \# input files & 0.5 | 0 | 0.453 & 0.5 | 0 | 0.453 & 0.5 | 1 | 0.107 \\ \hline
+     \# output files & 0.5 | 1 | 0.453 & 0.5 | 1 | 0.453 & 0.0 | 3 | 0.000 \\ \hline
+    Opsahl centrality & 1.791 | 2.83 | 0.252 & 1.250 | 4.867 | 0.000 & 2.793 | 7.415 | 0.024 \\ \hline
+    Ancestor centrality & 0.0009 | 0.0011 | 0.799 & 0.0002 | 0.0014 | 0.798 & 0.0007 | 0.0002 | 0.798 \\
 
+    \hline
+  \end{tabular}
+  \end{center}
+}
+\hfill{}
+\caption{average over good | test node value | density estimate of test node being ``normal"
+}
+\label{tb:tablename}
+\end{table*}
+
+In Table 1, we show a summary of the statistics that had any statistical difference between normal and abnormally behaving nodes. The buffer overflows showed the most abnormal behavior in the number of outgoing processes and the centrality measures. This makes sense, as arbitrary code execution will generate additional processes. Of the centrality metrics we implemented, the Opsahl Centrality metric did the best in distinguishing an exploited node from normally behaving nodes. Because the Opsahl Centrality metric accounts for the number of edges between a node and all of its descendants, this centrality metric is very sensitive to the addition of nodes. Exploits that have additional outputs (e.g. new processes and output files through a remote shell), thus generate a higher Opsahl centrality metric for the offending node. The more active the exploit is (say, if it forks a user shell), the more the centrality measure will be impacted, and the more likely it is that the exploit will be caught by our model.
+
+If the exploit does directly not generate additional files, however, statistics like "number of output files" will fail to be statistically significant. Indeed, the two programs (hello and mcrypt) that did not generate additional files were not flagged by that measure. On the other hand, the node representing the exploited version of \texttt{gcc} had abnormal density estimates, as it generated many more files than a normal \texttt{gcc} process. 
+
+Because of this exploratory analysis, we chose to implement Opsahl centralty and Ancestory centrality and analyze its accuracy on a real intrusion detection data set.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % EVALUATION
@@ -343,7 +369,7 @@ USE FIRST PAPER's RESULTS HERE to describe which metrics we should use.
 
 \subsection{Experimental Setup}
 
-talk about SPADE
+talk about SPADE and building graphs from BSM
 
 \subsection{Results}
 
@@ -354,9 +380,21 @@ talk about SPADE
 % CONCLUSION
 %
 
-\section{Conclusion}
+\section{Future Work}
 
-\section{Limitations \& Future Work}
+\subsection{N-distance Statistics}
+Some processes fork helper processes that do the real work (such as \texttt{gcc}). We found that \texttt{gcc} forks processes for the linker/assembler that handles generating output, so \texttt{gcc} does not directly have output files. Similarly, when running a python script, the code file itself is not directly executed, it is read in by a python process, which then goes off and collects input, generates output, and forks additional processes. Thus, when running a python file, the file itself only has one node in the provenance graph, with many python process nodes accessing it. In order to account for these kinds of relationships, we could calculate the relevant statistics for the test node and all nodes at distance $N$ from the test node, and then aggregate them. By utilizing information about neighboring nodes, we hope to detect intrusions that involve more complicated relationships
+between nodes.
+\subsection{ENV and ARGV}
+Currently we ignore the environment and argument information stored in the provenance graph. By generating histograms based on this information, we could catch subtler intrusions that rely on modified environment information. Additionally, if an exploit relies on a particular argument or argument patterns, this information might reflected in the ARGV information.
+\subsection{Online Intrusion Detection}
+Currently, this system runs after-the-fact, but truly useful intrusion detection systems need to run while the system is online. To do this, we would need to modify our statistics to use centrality metrics that are {\em progressive}, i.e., they can be recomputed online without needing to recompute the metric on the entire graph. 
+
+Given progressive forms of these statistics, we can modify PASS to compute Parzen-Window density estimates as it generates provenance, or we can audit system calls like SPADE (CITE) to build provenance graphs in user space and apply our Parzen-Window technique.
+\subsection{Local vs. Global}
+In our experiments, we looked at provenance graphs in their entirety. However, provenance graphs are meant to be long-lived, and an intrusion that affected only a small portion of the graph will have negligible effects on the global structure of the graph. To resolve this issue, a possible future extension to our work is to cluster the nodes based on time \cite{clustering} and then only examine the most ``recent" nodes when applying our histogram technique. Another approach would be to discard provenance data in computing Parzen-Window density estimates after the data have reached a certain age.
+
+\section{Conclusion}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % ACKNOWLEDGEMENTS
@@ -364,7 +402,7 @@ talk about SPADE
 
 \section{Acknowledgements}
 We want to thank Margo Seltzer and Daniel Margo for their guidance on the direction of the project and for
-their help in working with PASS and analyzing provenance graphs. We also want to thank the
+their help in working with PASS and analyzing provenance graphs. We also want to thank the members of the
 CS261 Program Committee for their feedback on the initial draft of this paper.
 
 
