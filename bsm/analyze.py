@@ -171,7 +171,10 @@ if __name__ == "__main__":
     shuffle(none_rows)
     none_rows = none_rows[:2*len(u2r_rows)]
 
+
     print "Found {} u2r, {} none".format(len(u2r_rows), len(none_rows))
+    if len(none_rows) == 0:
+        sys.exit()
 
     # vars to store results
     """
@@ -229,6 +232,7 @@ if __name__ == "__main__":
     for row in u2r_rows:
         t = row["timestamp"]
         psi_to_count = candidate_set_decisions(g, t, W, "opsahl", PSIS)
+        print psi_to_count
         for psi in psi_to_count:
             if sufficient(psi_to_count[psi]["intrusions"], psi_to_count[psi]["normal"]):
                 true_positive[psi] += 1
@@ -241,6 +245,7 @@ if __name__ == "__main__":
         print row
         t = row["timestamp"]
         psi_to_count = candidate_set_decisions(g, t, W, "opsahl", PSIS)
+        print psi_to_count
         for psi in psi_to_count:
             if sufficient(psi_to_count[psi]["intrusions"], psi_to_count[psi]["normal"]):
                 false_positive[psi] += 1

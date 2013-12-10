@@ -6,7 +6,9 @@ TYPE_MAPPING = {
         "dict": "r2l",
         "eject": "u2r",
         "ffb": "u2r",
+        "ffb_clear": "u2r",
         "format": "u2r",
+        "format_clear": "u2r",
         "ftp-write": "r2l",
         "guest":  "r2l",
         "imap":   "r2l",
@@ -39,9 +41,14 @@ def parse_row(line):
     full_time_str = row[1] + ' ' + row[2]
     obj["timestamp"] = time.mktime(time.strptime(full_time_str, "%m/%d/%Y %H:%M:%S"))
     obj["name"] = row[10]
+    obj["type"] = None
     if obj["name"] not in TYPE_MAPPING:
-        print "Unknown type {}".format(obj["name"])
-        obj["type"] = "unknown"
+        for k in TYPE_MAPPING:
+            if obj["name"].startswith(k):
+                obj["type"] = TYPE_MAPPING[k]
+        if obj["type"] is None:
+            print "Unknown type {}".format(obj["name"])
+            obj["type"] = "unknown"
     else:
         obj["type"] = TYPE_MAPPING[obj["name"]]
 
