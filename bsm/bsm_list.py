@@ -40,7 +40,7 @@ def parse_row(line):
     obj["timestamp"] = time.mktime(time.strptime(full_time_str, "%m/%d/%Y %H:%M:%S"))
     obj["name"] = row[10]
     if obj["name"] not in TYPE_MAPPING:
-        #print "Unknown type {}".format(obj["name"])
+        print "Unknown type {}".format(obj["name"])
         obj["type"] = "unknown"
     else:
         obj["type"] = TYPE_MAPPING[obj["name"]]
