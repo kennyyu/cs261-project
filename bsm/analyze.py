@@ -12,6 +12,7 @@ import bsm
 import bsm_list
 import histogram
 
+W = 10
 # functions to run on the graph (and aggregate results by node type)
 FUNCTIONS = {
         "opsahl": histogram.centrality_opsahl,
@@ -146,8 +147,10 @@ def candidate_set_decisions(g, t, w, metric, psis):
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print "Usage: python analyze.py graph.txt bsm.list"
+        print "Usage: python analyze.py graph.txt bsm.list [W]"
         sys.exit()
+    if len(sys.argv) > 3:
+        W = sys.argv[3]
 
     datafile = sys.argv[1]
     bsmlistfile = sys.argv[2]
@@ -185,7 +188,7 @@ if __name__ == "__main__":
     true negative -> you are not an intrusion and we did not flag
     keyed on psi
     """
-    PSIS = [0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    PSIS = [0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     true_positive = dict((k,0) for k in PSIS)
     false_negative = dict((k,0) for k in PSIS)
     false_positive = dict((k,0) for k in PSIS)
@@ -225,7 +228,6 @@ if __name__ == "__main__":
             # store the SORTED log probs (for quick lookup later)
             log_probs[name][f] = sorted(ll_y)
 
-    W = 100
 
     print "Deciding u2r..."
     # iterate over u2r rows
