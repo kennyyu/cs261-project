@@ -53,11 +53,10 @@
 \begin{abstract}
 Security rests on being able to identify potentially malicious behavior.
 One way to identify malicious behavior is to compare system behavior to known normal behavior.
-Intrusions on a system leave typically leave behind digital artifacts, and we hypothesize
-that we can detect intrusions on a system by identifying anomalies the artifacts' provenance, the lineage of how
+Intrusions on a system typically leave behind digital artifacts, and we hypothesize
+that we can detect intrusions on a system by identifying anomalies in the artifacts' {\em provenance}, or the lineage of how
 the artifact came to be in its present state.
-We present an intrusion detection approach to find these anomalies by analyzing centrality metrics
-on provenance graphs. We use a Parzen-Window approach \cite{parzen} on various provenance graph centrality metrics \cite{clustering}
+We present an intrusion detection approach to find these anomalies by analyzing provenance graphs statistics. We use a Parzen-Window approach \cite{parzen} on various provenance graph statistics \cite{clustering}
 to determine probability density estimates of normal behavior, and we use these density estimates to 
 determine if an intrusion occurred. We used this approach to analyze {\em user-to-remote} (u2r) intrusions 
 from the 1998 DARPA Intrusion Detection data sets \cite{darpa} and 
