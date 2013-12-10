@@ -184,7 +184,7 @@ def processEvent(eventData):
             fromPath = eventData["path1"]
             toPath = eventData["path2"]
         except KeyError:
-            print eventData
+            return
 
         """
         if (!toPath.startsWith("/")):
