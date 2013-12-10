@@ -68,7 +68,7 @@ def get_values(g, functions):
 
 # gaussian taken from http://stackoverflow.com/questions/14873203/plotting-of-1-dimensional-gaussian-distribution-function
 def gaussian(x, mu, sig):
-    return np.exp(-np.power(x - mu, 2.) / 2 * np.power(sig, 2.)) * 1./(2*math.pi*sig)
+    return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.))) * 1./(np.sqrt(2 * math.pi)*sig)
 def parzen_estimate(x, vals):
     std = np.std(vals)
     return 1./len(vals) * sum(gaussian(x, val, std) for val in vals)
@@ -108,6 +108,38 @@ def get_candidate_set(g, w, t):
                 if g.node[v]["type"] == "process" and g.node[v]["cmd"] != "UNKNOWN":
                     nodes.add(v)
     return nodes
+
+def candidate_set_decisions(g, t, w, metric, psis):
+    """
+    Returns a mapping from psi to the number of nodes marked as an intrusion
+    for psi in psis
+    """
+    candidate_set = get_candidate_set(g, t, w)
+    num_nodes = 0
+    parzen_probs = []
+    for idx in candidate_set:
+        name = g.node[idx]["cmd"]
+        if name == "UNKNOWN":
+            continue
+        num_nodes += 1
+
+        # get probability for this node
+        v = g.node[idx][metric]
+        vals = values[name][metric]
+        ll_y = log_probs[name][metric]
+        _,p = parzen_is_expected(v, vals, ll_y, 0.1)
+        parzen_probs.append(p)
+
+    # mapping from psi to (num_normal
+    results = {}
+    for psi in psis:
+        num_normal = 0
+        for p in parzen_probs:
+            if p > psi:
+                num_normal += 1
+        results[psi] = {"normal": num_normal, "total": num_nodes, "intrusions": num_nodes - num_normal}
+
+    return results
 
 
 if __name__ == "__main__":
@@ -156,6 +188,7 @@ if __name__ == "__main__":
     # name => function => list of values
     print "Computing centrality metrics..."
     values = get_values(g, FUNCTIONS)
+    print values
 
 
     # compute the log probs in advance
@@ -195,6 +228,7 @@ if __name__ == "__main__":
     print "Deciding none..."
     # iterate over normal rows
     for row in none_rows:
+        print row
         t = row["timestamp"]
         psi_to_count = candidate_set_decisions(g, t, W, "opsahl", PSIS)
         for psi in psi_to_count:
@@ -215,37 +249,6 @@ if __name__ == "__main__":
     print "False negative:"
     print false_negative
 
-def candidate_set_decisions(g, t, w, metric, psis):
-    """
-    Returns a mapping from psi to the number of nodes marked as an intrusion
-    for psi in psis
-    """
-    candidate_set = get_candidate_set(g, t, w)
-    num_nodes = 0
-    parzen_probs = []
-    for idx in candidate_set:
-        name = g.node[idx]["cmd"]
-        if name == "UNKNOWN":
-            continue
-        num_nodes += 1
-
-        # get probability for this node
-        v = g.node[idx][metric]
-        vals = values[name][metric]
-        ll_y = log_probs[name][metric]
-        _,p = parzen_is_expected(v, vals, ll_y, 0.1)
-        parzen_probs.append(p)
-
-    # mapping from psi to (num_normal
-    results = {}
-    for psi in psis:
-        num_normal = 0
-        for p in parzen_probs:
-            if p > psi:
-                num_normal += 1
-        results[psi] = {"normal": num_normal, "total": num_nodes, "intrusions": num_nodes - num_normal}
-
-    return results
 
 """
     psi = 0.1

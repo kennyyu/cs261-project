@@ -179,19 +179,31 @@ def centrality_opsahl(dg):
     """
     TODO: reverse edges
     """
+    print "computing all pairs shortest path"
     ds = all_pairs_shortest_path_length(dg)
+    print "done computing all pairs shortest path"
     rank = {}
+    progress = 0
     for x in dg.nodes():
         r = 0.
-        for v in dg.nodes():
-            if x == v:
-                continue
-            if x not in ds:
-                continue
-            if v not in ds[x]:
+        if x not in ds:
+            continue
+        for v in ds[x]:
+            if ds[x][v] == 0:
                 continue
             r += 1. / ds[x][v]
+        progress += 1
+#        for v in dg.nodes():
+#            if x == v:
+#                continue
+#            if x not in ds:
+#                continue
+#            if v not in ds[x]:
+#                continue
+#            r += 1. / ds[x][v]
         rank[x] = r
+        if progress % 1000 == 0:
+            print "progress...", progress
     return rank
 
 def centrality_age(dg):
