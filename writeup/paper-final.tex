@@ -429,7 +429,10 @@ and were correctly identified as having an intrusion, to the total number of tim
 \end{itemize}
 
 We evaluated the accuracy of our system on various values of $\psi$ and $W = 10s, 100s, 1000s$.
+\subsection{BSM to Provenance Conversion}
+For our experiment, we needed to convert the BSM traces into a provenance graph. The designers of SPADE \cite{spade} used this same approach, so we ported their conversion code to our system. The BSM data only contains PIDs, however, not process names. While SPADE used \texttt{ps} to determine the process names for a particular PID, we needed to find another way, because we did not have access to the \texttt{ps} output for all timestamps. We initially tried to use minutely \texttt{ps} output provided by DARPA, but too many processes started and completed within this window, leaving them unnamed in our graph. We then parsed the BSM traces directly, looking for \texttt{execve} calls, which we could use to name our process nodes. 
 
+The SPADE code we used as a model parses the BSM file, adding nodes when processes and files are introduced (e.g. via \texttt{fork} or \texttt{creat}) and adding edges when processes and files interact (e.g. via \texttt{write} and \texttt{fork}). The types of edges were very similar to those found in the PASS data - namely ``triggered by'' edges between process nodes and ``used'' edges between process nodes and file nodes.
 \subsection{Results}
 
 \noindent
