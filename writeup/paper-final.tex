@@ -135,21 +135,46 @@ POSSIBLY INCLUDE THIS
 
 \section{Related Work}
 
-\subsection{Existing IDSs}
+\subsection{Existing IDSs using Provenance}
 
-Many existing intrusion detection systems have made use of the fact that intrusion detection is an example of a
-{\em novelty detection} problem where access to novel or abnormal patterns is difficult to obtain. Somayaji and Forrest
-attempt to solve this problem by analyzing sequences of system calls (CITE WORK). By analyzing the sequences
+Many existing intrusion detection systems use provenance in some limited capacity; however, none of them
+have used provenance for a fully automated detection system. 
+Somayaji and Forrest's work in analyzing sequences of system calls for intrusion detection (CITE WORK) can
+be seen as one of the earliest works in building an intrusion detection system using provenance: sequences of
+system calls can be seen as a limited form of provenance, as many systems build provenance graphs from
+system call traces (CITE SPADE AND BURRITO). By analyzing the sequences
 of system calls a process makes over time, their system builds a profile of ``normal" process behavior. When
 the process in the future makes enough patterns of unrecognized sequences of system calls, the system flags
 this process as behaving abnormally and attempts to stop the process, either through exponentially slowing down
 system calls or aborting system calls entirely. Notably, their system is trained only by analyzing ``normal" data
-without knowing explicitly what is considered ``abnormal." 
+without knowing explicitly what is considered ``abnormal." Because their system achieves high
+accuracy in determining intrusions with only sequences of system calls, we believe that having real provenance
+data in a graph structure--which in theory would be a superset of system call data--would allow us
+to achieve comparable, if not better intrusion detection accuracy.
 
+More recent work make use of the structure of provenance as a directed graph for a semi-automatic form
+of intrusion detection, and to determine the scope of an intrusion. ??? developed Backtracker (CITE) a modified
+Linux kernel that tracks dependencies between operating system objects (files, processes, file names) similar
+to provenance graphs. Backtracker builds a backwards causal graph to determine the entry point of an intrusion,
+and it builds a forward causal graph to determine possibly tainted files, processes, or hosts in a distributed
+system. However, Backtracker does not provide a way of automatically determining if an intrusion occurred
+using provenance data; the provenance graph structure is only utilized after-the-fact.
 
+??? make use of simple provenance graph statistics to categorize provenance graphs and to assist a human
+in manual intrusion-detection. Given a data set of many provenance graphs, they calculated basic statistics
+on the graphs (e.g., total nodes, total edges, max incoming edges on a node, max outgoing edges on a node,
+node/edge ratio, average total edges per node, etc.). Their approach allows a human to more easily
+notice anomalies in provenance graphs, but they do not provide a way to automate this detection.
+We borrow their ideas of using simple provenance graph statistics as features to detect intrusions.
+
+These works demonstrate that provenance data is indeed useful in collecting information about intrusions, and
+Somayaji and ???'s work suggests that it might be possible to build a fully automated intrusion detection
+system by making use of the graph structure of provenance.
 
 \subsection{Parzen-Windows}
 
+To address the difficulty of obtaining abnormal patterns for novelty detection on intrusion detection, we borrow
+the Parzen-Window model approach proposed by ???.
 ??? person attempt to solve the lack of abnormal patterns problem by using Parzen-Windows to build {\em nonparametric}
 density estimations of normal behavior (CITE). A density estimation is considered {\em nonparametric} if the estimation
 makes no assumptions about the forms of the PDFs, except that PDFs are smooth. By using a nonparametric
@@ -177,34 +202,15 @@ P(L(\m{y}) \leq L(\m{x}))
 &=&  \frac{\#\m{y} \mbox { with } L(\m{y}) \leq L(\m{x})}{n} \\
 &>& \psi
 \end{eqnarray*}
-for some threshold $0 \leq \psi \leq 1$, called the {\em false detection rate}. 
+for some threshold $0 < \psi < 1$, called the {\em false detection rate}. 
 Thus, $\m{x} \in \omega_1$ is behaving normally if and only if $P(L(\m{y}) \leq L(\m{x})) > \psi$. 
 
 In this paper, we use this same model to build profiles of ``normal" behavior for each process. We use
 one-dimensional feature vectors $x$, and we use various provenance graph statistics and graph
-centrality metrics as our features. For the common variance of our Gaussian kernels, we chose
+centrality metrics as our features. We describe the various statistics and graph centrality metrics we explored
+in the following section. For the common variance of our Gaussian kernels, we chose
 the variance to be the variance of the data set $D$ for each unique process name. 
 We vary the features we used and values of $\psi$ and evaluate its performance on an intrusion detection data set.
-
-
-%%% IGNORE BELOW
-
-inspiration
-- novelty detection problem with intrusion detection
-- somayaji use sequences of system calls
-- system calls and BSM data can be used to build provenance graphs; we believe that
-provenance graphs provide more information than somayaji and can help detect
-intrusions with better results
-
-use provenance to automatically detect intrusions
-- existing machine learning techniques on KDD data set: use features of an intrusion (number of data)
-- but not actually using graph structure
-- parzen window--allow us to build a profile of normal with lack of abnormal examples
-  explain the math of this
-  
-  we limit our work to these intrusions
-- explain various kinds
-- why just user 2 local
 
 \subsection{Provenance Graph Features}
 
@@ -212,6 +218,19 @@ how we choose features to look at
 - basic statistics for manual detection
 - graph centrality and clustering can help us identify the different kinds of tasks running
 - use these metrics for kernel estimation and 
+- cite machine learning 
+
+
+\subsection{Intrusion Types}
+
+
+use provenance to automatically detect intrusions
+- existing machine learning techniques on KDD data set: use features of an intrusion (number of data)
+- but not actually using graph structure
+  
+  we limit our work to these intrusions
+- explain various kinds
+- why just user 2 local
 
 
 
