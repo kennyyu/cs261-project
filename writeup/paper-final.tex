@@ -58,11 +58,8 @@ that we can detect intrusions on a system by identifying anomalies in the artifa
 the artifact came to be in its present state.
 We present an intrusion detection approach to find these anomalies by analyzing provenance graphs statistics. We use a Parzen-Window approach \cite{parzen} on various provenance graph statistics \cite{clustering}
 to determine probability density estimates of normal behavior, and we use these density estimates to 
-determine if an intrusion occurred. We used this approach to analyze {\em user-to-remote} (u2r) intrusions 
-from the 1998 DARPA Intrusion Detection data sets \cite{darpa} and 
-achieved up to *TODO true positive rate for intrusions* accuracy in detecting
-intrusions with only *TODO false positive rate for intrusions* accuracy. We also present future work
-to extend our intrusion model to an online intrusion detection system.
+determine if an intrusion occurred. We used this approach to analyze simple intrusions on small provenance graphs and achieved promising results, however applying this technique to {\em user-to-remote} (u2r) intrusions 
+from the much larger 1998 DARPA Intrusion Detection data sets  \cite{darpa} resulted in normal and abnormal behavior being indistinguishable. We discuss why we received the results we obtained for each of these workloads, and we propose requirements on provenance graph models and statistics that are necessary for the model to scale to large provenance graphs.
 
 \end{abstract}
 
@@ -90,14 +87,14 @@ typed nodes and typed edges.
 Nodes typically include processes and files, and edges are directed from nodes to their dependencies. For example,
 process nodes have edges directed towards input file nodes and to the parent process's node, and
 file nodes have edges directed towards previous versions of the file and to the nodes of the
-processes that modified the file. See Figure \ref{graph-simple} for an illustration of these provenance
+processes that modified the file. See Figure 1 for an illustration of these provenance
 graph node and edge types.
 
 Existing intrusion detection systems (IDS) use provenance data only to a limited extent.
 Allen et. al. analyze
-basic statistics on provenance graphs (e.g., number of nodes, number of edges, ... TODO) in order to facilitate
+basic statistics on provenance graphs (e.g., number of nodes, number of edges, max number of edges per node, etc.) in order to facilitate
 easier manual intrusion detection by a human \cite{provstat}. Their work, however, does not present a way of using provenance
-graph to automatically determine intrusions. Other systems use provenance data to determine the scope of an
+graphs to automatically determine intrusions. Other systems use provenance data to determine the scope of an
 intrusion. For example, Backtracker \cite{backtracker} uses provenance graphs to build causality graphs of intrusions: once the
 system has
 determined an intrusion has occurred, the system follows the causality graph backwards determine the original source of the attack, and 
@@ -120,20 +117,14 @@ for non-parametric density estimation. Using this technique, they obtain a high 
 in identifying various intrusion types \cite{parzen}. Because obtaining abnormal patterns is difficult, 
 we borrow their Parzen-Window approach to build models of normal behavior using 
 various provenance graph statistics and graph centrality metrics, and we evaluate the success of this technique
-on {\em user-to-local} (u2l) intrusions (intrusions that provide unauthorized access to local superuser (root) privileges),
-and {\em remote-to-local} (r2l) intrusions (intrusions that provide unauthorized access from a remote machine).
+on {\em user-to-local} (u2l) intrusions, intrusions that provide unauthorized access to local superuser (root) privileges.
 
 The main contributions of this paper are the following:
 \begin{enumerate}
 \item Discuss which provenance graph statistics we chose to use, how we chose them, and why we chose them.
-\item Analyze the Parzen-Window technique with various provenance graph statistics on a real intrusion detection data set and evaluate its accuracy.
-\item Discuss the limitations of the approach and present future work to transform the technique into an online intrusion detection system.
+\item Analyze the Parzen-Window technique with various provenance graph statistics on a small data set and a real intrusion detection data set and evaluate its accuracy on both.
+\item Discuss the limitations of the approach and propose requirements for provenance graph intrusion detection models to scale to larger-sized graphs.
 \end{enumerate}
-
-POSSIBLY INCLUDE THIS TODO
-* the papers suck at finding u2r
-* because they don't look at provenance graph structure
-* we can do better?
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -217,7 +208,7 @@ In this paper, we use this same model to build profiles of ``normal" behavior fo
 one-dimensional feature vectors $x$, and we use various provenance graph statistics and graph
 centrality metrics as our features. We describe the various statistics and graph centrality metrics we explored
 in the following section. For the common variance of our Gaussian kernels, we chose
-the variance to be the variance of the data set $D$ for each unique process name. 
+the variance to be the variance of the data set $D_P$ for each unique process name $P$. 
 We vary the features we used and values of $\psi$ and evaluate its performance on an intrusion detection data set.
 
 \subsection{Provenance Graph Features}
@@ -297,12 +288,11 @@ the PASS volume already installed.
 For each of our intrusions, we ran it normally multiple times and collected the provenance. We then ran the
 intrusion with the exploit multiple times and collected the new provenance.
 
-We used the following procedure to implement our Parzen-Window density estimates and
-intrusion/normal decision.
+We used the following procedure to implement our Parzen-Window density estimates and to decide whether a node is behaving normally or abnormally.
 \begin{enumerate}
 \item For each statistic that we implemented, we computed the counts for that statistic for all the
 nodes in the provenance graph containing the normally-behaving workload.
-\item We aggregated the counts by the name of the process (the path to the executable). For a given process $P$, denote the
+\item We aggregated the counts by the name of the process (the path to the executable). For a given process name $P$, denote the
 set of counts for that process name as $D_P$.
 \item For each $y \in D_P$, calculate the log-likelihood $L_P(y)$.
 \item For a test node with process name $P$ in the exploited-workload provenance graph, we calculate the value $x$ of the statistic in its graph, and then compute $L_P(x)$. 
@@ -316,7 +306,7 @@ In the exploited workloads, we used Orbiter \cite{orbiter} to find the abnormall
 \subsection{Simulated Intrusions}
 
 \subsubsection{hello}
-We found that many of the popular exploits \cite{metasploit, exploitdb} involved buffer overflows and arbitrary code execution and possibly obtain root access. We created a simple \texttt{hello} program that echos standard in to standard out, and we gave it a buffer overflow vulnerability that allows a malicious user to fork a shell.
+We found that many of the popular exploits \cite{metasploit, exploitdb} involved buffer overflows and arbitrary code execution to possibly obtain root access. We used this as an guide to create a simple exploite \texttt{hello} program that echos standard in to standard out, and we gave it a buffer overflow vulnerability that allows a malicious user to fork a shell.
 
 We ran \texttt{hello} normally 40 times on various inputs and collected the provenance times. We then exploited the buffer overflow vulnerability in \texttt{hello} to spawn an \texttt{ls} process, and saved the standard out of that process to a file.
 
@@ -326,7 +316,7 @@ The mcrypt encryption package had a long standing buffer overflow, which would a
 We ran our program on over 200 good inputs, and stored the provenance data. We then ran our program on two bad inputs, first to call \texttt{ls} as a Proof of Concept, and again to call \texttt{/bin/sh} to demonstrate that more severe attacks can be performed. We again exported the provenance generated from this exploited workload.
 
 \subsubsection{gcc}
-Another type of exploit is more reminiscent of a system administration failure. By unexpectedly aliasing an important command, a user can unknowingly grant root access to a malicious program. To emulate this sort of attack, we replaced \texttt{/usr/bin/gcc} with our own version of gcc, which, in addition to compiling the user's code (via a call to gcc), logs that the user has made a request and copies the files the user had tried to compile. 
+Another type of exploit is more reminiscent of a system administration failure. By unexpectedly aliasing an important command, a user can unknowingly grant root access to a malicious program. To emulate this system administration attack, we replaced \texttt{/usr/bin/gcc} with our own version of gcc, which, in addition to compiling the user's code (via a call to gcc), logs that the user has made a request and copies the files the user had tried to compile. 
 
 For our system administration attack, we compiled the PASS toolset using \texttt{gcc}, and exported the provenance from these runs. We then replaced \texttt{gcc} with our exploited version, compiled the toolset several times with different configurations, and exported the provenance again.
 
@@ -370,9 +360,9 @@ on how quickly we executed our workloads.
 
 In Table 1, we show a summary of the statistics that had any statistical difference between normal and abnormally behaving nodes. The buffer overflows showed the most abnormal behavior in the number of outgoing processes and the centrality measures. This makes sense, as arbitrary code execution will generate additional processes. Of the centrality metrics we implemented, the Opsahl Centrality metric did the best in distinguishing an exploited node from normally behaving nodes. Because the Opsahl Centrality metric accounts for the number of edges between a node and all of its descendants, this centrality metric is very sensitive to the addition of nodes. Exploits that have additional outputs (e.g. new processes and output files through a remote shell), thus generate a higher Opsahl centrality metric for the offending node. The more active the exploit is (say, if it forks a user shell), the more the centrality measure will be impacted, and the more likely it is that the exploit will be caught by our model.
 
-If the exploit does directly not generate additional files, however, statistics like "number of output files" will fail to be statistically significant. Indeed, the two programs (hello and mcrypt) that did not generate additional files were not flagged by that measure. On the other hand, the node representing the exploited version of \texttt{gcc} had abnormal density estimates, as it generated many more files than a normal \texttt{gcc} process. 
+If the exploit does not directly generate additional files, however, statistics like ``number of output files" will fail to be statistically significant. Indeed, the two programs (hello and mcrypt) that did not generate additional files were not flagged by that measure. On the other hand, the node representing the exploited version of \texttt{gcc} had abnormal density estimates, as it generated many more files than a normal \texttt{gcc} process. 
 
-Because of this exploratory analysis, we chose to implement Opsahl and ancestor centrality and analyze its accuracy on a real intrusion detection data set.
+Because of this exploratory analysis, we chose to implement Opsahl centrality and analyze its accuracy on a real intrusion detection data set.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % EVALUATION
@@ -386,18 +376,18 @@ We evaluated our approach by analyzing its accuracy on the 1998 DARPA Intrusion 
 The data set consists of users of several weeks of network-based attacks in the midst of normal
 background data. The data includes BSM (Basic Security Model) traces \cite{bsm}, which provide an
 audit of all the system calls made within a certain time period. The data also includes a list
-of specific moments in time $T$ and whether an intrusion occurred and if so, what kind of intrusion. 
+of specific moments in time $T$ and the type of intrusion that occurred, if any.
 
 For our experiments, we limited the scope of our intrusion detection system to only u2r attacks, as
 the other kinds of attacks were network-based and would not appear in the provenance data. 
-We identify each accuracy measurement with a tuple:
-$$(\mbox{centrality metric}, \psi, W)$$
-where the centrality metric is one of Opsahl, indegree, or ancestor, $\psi$ is our false detection rate for our Parzen-Window
+We identify each workload with a tuple:
+$$(\psi, W)$$
+where $\psi$ is our false detection rate for our Parzen-Window
 estimates, and $W$ is the time window that we use to form time intervals to look for anomalous nodes. We used
 the following procedure to evaluate the accuracy of our system: 
 \begin{enumerate}
 \item Use BSM traces to build provenance graphs, in a similar fashion to SPADE \cite{spade}. 
-\item Compute the centralities of the nodes in the graph using the given centrality metric, and create a mapping from each process
+\item Compute the Opsahl centrality of the nodes in the graph and create a mapping from each process
 name $P$ to a list of log-likelihood values $L(y)$, where $y$ is the computer centrality measurement for each node in the graph having process name $P$.
 \item For a specific moment in time $T$, find all edges in the provenance graph we built with timestamps in the interval $[T - W, T + W]$. 
 Use the nodes attached to these edges as our {\em candidate anomaly set}. We used the specific times listed in data sets for our values of $T$.
@@ -405,11 +395,10 @@ Use the nodes attached to these edges as our {\em candidate anomaly set}. We use
 name $P$ to determine if the node is anomalous. We evaluate whether a node is normal or anomalous using the Parzen-Windows built from the graph
 containing the node.
 \item For times $T$ in the data set listed as having an intrusion, our intrusion detection system considers that time $T$ as having an intrusion
-if there are {\em sufficient} number of nodes in the $[T - W, T + W]$ window considered anomalous. A candidate anomaly set has a 
-{\em sufficient} number of anomalous nodes if TODO...
+if a {\em majority} of the nodes in the candidate anomaly set are considered anomalous.
 \end{enumerate}
 
-For each $(\mbox{centrality metric}, \psi, W)$, we compute:
+For each $(\psi, W)$, we compute:
 \begin{itemize}
 \item {\em False Positive Rate (FPR).} Ratio of number of time intervals that do not actually contain an intrusion
 but were misidentified as having an intrusion, to the total number of time intervals.
@@ -417,32 +406,44 @@ but were misidentified as having an intrusion, to the total number of time inter
 and were correctly identified as having an intrusion, to the total number of time intervals.
 \end{itemize}
 
-We evaluated the accuracy of our system on various values of $\psi$ and $W$.
+We evaluated the accuracy of our system on various values of $\psi$ and $W = 10s, 100s, 1000s$.
 
 \subsection{Results}
 
-TODO
+\noindent
+\begin{figure}
+  \label{tpr}
+  \centering
+    \includegraphics[width=0.5\textwidth]{img/tpr.png}
+    \caption{True Positive Rate. The window size 10s, 100s, 1000s did not impact the true positive rate at all for various values of $\psi$.} 
+\end{figure}
 
-Need these graphs:
-[1]:
-- fix psi
-- x-axis is W (probably log-scale, as W = 10ms, 1000ms, 100000ms, 10 ** N ms)
-- y-axis is [0,1]
-- overlay true positive rate for each of the centrality metrics in different color
+\noindent
+\begin{figure}
+  \label{fpr}
+  \centering
+    \includegraphics[width=0.5\textwidth]{img/fpr.png}
+    \caption{False Positive Rate. The window size 10s, 100s, 1000s did not impact the false positive rate very
+    much for various values of $\psi$.} 
+\end{figure}
 
-[2]: repeat [1] but plot false positive rate instead
+We plot the true positive rates for various values of $\psi$ and window sizes $W$ in Figure 2, and similarly for the false positive rates in Figure 3.
 
-[3-4] repeat [1-2] with a different value of psi
-
-[5-6] repeat [1-2] with another value of psi
+We note that the true positive rate and false positive rates are nearly identical as we vary $\psi$. Furthermore, the true positive rate stayed exactly the same as we varied our window size $W$ from $10s, 100s, 1000s$. Thus, the window size had little to no impact on the TPR and FPR. As we increase $\psi$, the false detection rate, we expect to see more positives, and this is exactly what we see in these graphs.
 
 \subsection{Discussion}
 
-TODO
+We note that the true positive rates and false positive rates were not what we expected. We were surprised to see that the true positive rates and false positive rates were nearly identical to each other. The fact that the TPR and FPR were identical to each other suggests that our Parzen-Window model using Opsahl centrality could not reliably distinguish between normal and abnormal behavior in the large graphs generated from the DARPA data set. 
 
-\subsection{Limitations}
+We believe that the reason we had more promising results on our simulated intrusion data sets from PASS was because the provenance graphs from these workloads were much smaller (on the order of 5000 nodes). As a result of the much smaller size, small changes in provenance graph structure from an intrusion has a much profounder impact on the smaller provenance graphs. Thus, intrusions on our PASS workload had a much higher impact on the centrality calculations and resulted in more anomalous behavior in our Parzen-Window model. In the DARPA data set, we faced much larger provenance graphs (on the other of 20,000 nodes), and because of the much larger size, the effect of small changes in provenance graph structure from an intrusion had a much smaller impact on the overall structure of the graph. Intrusions did not change the centrality metrics very much in large graphs; therefore anomalous behavior went undetected, regardless of the window size we chose. Since our system could not distinguish between anomalous and normal behavior, then the true positive rate and false positive rate are essentially identical. From these results, we propose the following requirements for provenance graph statistics and models in order to be useful for large provenance graphs:
 
-TODO
+\begin{itemize}
+\item The effects of the provenance graph statistic should grow as the size of the provenance graph grows. Since provenance graphs are meant to be long-lived, a small anomaly in the provenance graph will be drowned out by the overall large structure of the graph. Thus, if a statistic only captures a small local property of the graph, that property will become negligible and the anomaly will go undetected. As a result, a provenance statistic should become {\em more} anomalous as more provenance is collected.
+
+\item The statistic must be adaptive and computable online. In order to make a truly useful online intrusion detection system, the statistic must be recomputed quickly over all the nodes in the graph as the provenance graph grows. Possible examples of such a statistic could be progressive forms of PageRank where the rank is computed relative to a starting node.
+
+\item The model must be able to predict anomalous behavior by being trained with only examples of normal behavior. As stated by Yeung et. al., intrusion detection is a form of novelty detection where access to abnormal patterns is very difficult \cite{parzen}. As a result, successful intrusion detection models like Somayaji and Forrest's model must be able to characterize abnormal behavior without knowing precisely what that means.
+\end{itemize}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -456,6 +457,8 @@ Some processes fork helper processes that do the real work (such as \texttt{gcc}
 between nodes.
 \subsection{ENV and ARGV}
 Currently we ignore the environment and argument information stored in the provenance graph. By generating histograms based on this information, we could catch subtler intrusions that rely on modified environment information. Additionally, if an exploit relies on a particular argument or argument patterns, this information might reflected in the ARGV information.
+\subsection{Different values for the density variance}
+In our system, we used the variance $D$ of each data set as the variance of our kernel. To possibly get better results, one might try using different values for the variance, possible values that capture more granularity of students.
 \subsection{Online Intrusion Detection}
 Currently, this system runs after-the-fact, but truly useful intrusion detection systems need to run while the system is online. To do this, we would need to modify our statistics to use centrality metrics that are {\em progressive}, i.e., they can be recomputed online without needing to recompute the metric on the entire graph. 
 
@@ -466,7 +469,8 @@ can combat an {\em autoimmune disorders} in which attackers purposely invoke pro
 behaving abnormally.
 
 \section{Conclusion}
-TODO
+
+In this paper, we frame the intrusion detection problem as a novelty detection problem, and we propose a model to use Parzen-Window estimates on provenance graph statistics to detect intrusions. Our model showed some success on small provenance graphs, but did not perform well on much larger provenance graphs. We discuss why we obtained these results, and we use these lessons to propose requirements for intrusion detection models that use provenance graphs.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % ACKNOWLEDGEMENTS
