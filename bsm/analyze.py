@@ -113,23 +113,21 @@ if __name__ == "__main__":
     print vals
 
     results = {}
-    num_expected = 0
     psi = 0.1
     for v in vals:
         # cache results
         if v in results:
-            expected,p = results[v]
+             p = results[v]
         else:
-            expected,p = parzen_is_expected(v, vals, psi)
-            results[v] = (expected,p)
-            print "{} is {}expected (p = {})".format(v, "" if expected else "NOT ", p)
-        if expected:
-            num_expected += 1
-    print "{}/{} expected ({}%)".format(num_expected, len(vals), float(num_expected)/len(vals))
-
-
-
-
+            _,p = parzen_is_expected(v, vals, psi)
+            results[v] = p
+            #print "{} is {}expected (p = {})".format(v, "" if expected else "NOT ", p)
+    for psi in [0.01, 0.05, 0.1, 0.2]:
+        num_expected = 0
+        for val in vals:
+            if results[val] > psi:
+                num_expected += 1
+        print "Psi: {}/{} expected ({}%)".format(psi, num_expected, len(vals), float(num_expected)/len(vals))
 
     """
     # create KDEs
