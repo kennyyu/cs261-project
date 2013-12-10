@@ -117,7 +117,7 @@ Using this technique, they obtain a high degree of success
 in identifying various intrusion types \cite{parzen}. Because obtaining abnormal patterns is difficult, 
 we borrow their Parzen-Window approach to build models of normal behavior using 
 various provenance graph statistics and graph centrality metrics, and we evaluate the success of this technique
-on {\em user-to-local} (u2l) intrusions, intrusions that provide unauthorized access to local superuser (root) privileges.
+on {\em user-to-root} (u2r) intrusions, intrusions that provide unauthorized access to local superuser (root) privileges.
 
 The main contributions of this paper are the following:
 \begin{enumerate}
@@ -208,7 +208,7 @@ for some threshold $0 < \psi < 1$, called the {\em false detection rate}.
 Thus, $\m{x} \in \omega_1$ is behaving normally if and only if $P(L(\m{y}) \leq L(\m{x})) > \psi$. 
 
 In this paper, we use this same model to build profiles of ``normal" behavior for each process. We use
-one-dimensional feature vectors $x$, and we use various provenance graph statistics and graph
+one-dimensional feature vectors $\m{x}$, and we use various provenance graph statistics and graph
 centrality metrics as our features. We describe the various statistics and graph centrality metrics we explored
 in the following section. For the common variance of our Gaussian kernels, we chose
 the variance to be the variance of the data set $D_P$ for each unique process name $P$. 
@@ -262,10 +262,10 @@ The DARPA Intrusion Detection Data Sets \cite{darpa} describe various kinds of i
 \begin{enumerate}
 \item {\bf Denial of Service (dos)}. Intrusion that results in denial of service, e.g., overwhelming a server.
 \item {\bf Remote to Local (r2l)}. Unauthorized access from a machine, e.g., guessing passwords.
-\item {\bf User to Root (u2l)}. Unauthorized access to local superuser (root) privileges, e.g., various buffer overflow attacks.
+\item {\bf User to Root (u2r)}. Unauthorized access to local superuser (root) privileges, e.g., various buffer overflow attacks.
 \item {\bf Probing (probe)}. Surveillance and scanning, e.g. port scanning.
 \end{enumerate}
-Because we only collect provenance graphs local to the machine, we chose to limit our intrusion detection system only to u2l intrusions within this paper, as the other types of attacks involve exploiting the network and would not appear in provenance data.
+Because we only collect provenance graphs local to the machine, we chose to limit our intrusion detection system only to u2r intrusions within this paper, as the other types of attacks involve exploiting the network and would not appear in provenance data.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
