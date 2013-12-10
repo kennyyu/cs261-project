@@ -91,7 +91,7 @@ file nodes have edges directed towards previous versions of the file and to the 
 processes that modified the file.
 
 Existing intrusion detection systems (IDS) use provenance data only to a limited extent.
-??? person analyzes
+Allen et. al. analyze
 basic statistics on provenance graphs (e.g., number of nodes, number of edges, ... TODO) in order to facilitate
 easier manual intrusion detection by a human \cite{provstat}. Their work, however, does not present a way of using provenance
 graph to automatically determine intrusions. Other systems use provenance data to determine the scope of an
@@ -107,7 +107,7 @@ do not present a way of using provenance data to automatically detect intrusions
 In this paper, we present an approach to use provenance data to automatically detect intrusions. Intrusion
 detection can be framed as a {\em novelty detection} problem, in which one attempts to decide whether
 an unknown test pattern is produced by an underlying distribution corresponding to a training set
-of normal patterns \cite{parzen}. However, ???authors note that in the case of intrusion detection, novel
+of normal patterns \cite{parzen}. However, Yeung et. al. note that in the case of intrusion detection, novel
 or abnormal patterns are typically difficult to obtain, and as a result, they present a {\em Parzen-Window} approach
 for non-parametric density estimation. Using this technique, they obtain a high degree of success
 in identifying various intrusion types \cite{parzen}. Because obtaining abnormal patterns is difficult, 
@@ -153,7 +153,7 @@ data in a graph structure--which in theory would be a superset of system call da
 to achieve comparable, if not better intrusion detection accuracy.
 
 More recent work make use of the structure of provenance as a directed graph for a semi-automatic form
-of intrusion detection, and to determine the scope of an intrusion. ??? developed Backtracker \cite{backtracker}
+of intrusion detection, and to determine the scope of an intrusion. King et. al. developed Backtracker \cite{backtracker}
  a modified
 Linux kernel that tracks dependencies between operating system objects (files, processes, file names) similar
 to provenance graphs. Backtracker builds a backwards causal graph to determine the entry point of an intrusion,
@@ -161,7 +161,7 @@ and it builds a forward causal graph to determine possibly tainted files, proces
 system. However, Backtracker does not provide a way of automatically determining if an intrusion occurred
 using provenance data; the provenance graph structure is only utilized after-the-fact.
 
-??? make use of simple provenance graph statistics to categorize provenance graphs and to assist a human
+Allen et. al. make use of simple provenance graph statistics to categorize provenance graphs and to assist a human
 in manual intrusion-detection \cite{provstat}. Given a data set of many provenance graphs, they calculated basic statistics
 on the graphs (e.g., total nodes, total edges, max incoming edges on a node, max outgoing edges on a node,
 node/edge ratio, average total edges per node, etc.). Their approach allows a human to more easily
@@ -169,14 +169,14 @@ notice anomalies in provenance graphs, but they do not provide a way to automate
 We borrow their ideas of using simple provenance graph statistics as features to detect intrusions.
 
 These works demonstrate that provenance data is indeed useful in collecting information about intrusions, and
-Somayaji and ???'s work suggests that it might be possible to build a fully automated intrusion detection
+Somayaji and King's work suggests that it might be possible to build a fully automated intrusion detection
 system by making use of the graph structure of provenance.
 
 \subsection{Parzen-Windows}
 
 To address the difficulty of obtaining abnormal patterns for novelty detection on intrusion detection, we borrow
-the Parzen-Window model approach proposed by ???.
-??? person attempt to solve the lack of abnormal patterns problem by using Parzen-Windows to build {\em nonparametric}
+the Parzen-Window model approach proposed by Yeung et. al.
+They attempt to solve the lack of abnormal patterns problem by using Parzen-Windows to build {\em nonparametric}
 density estimations of normal behavior \cite{parzen}. A density estimation is considered {\em nonparametric} if the estimation
 makes no assumptions about the forms of the PDFs, except that PDFs are smooth. By using a nonparametric
 density estimation, one can build a probability density estimate of normal behavior by only having examples of normal
@@ -215,7 +215,7 @@ We vary the features we used and values of $\psi$ and evaluate its performance o
 
 \subsection{Provenance Graph Features}
 
-We were inspired by the work proposed by ??? who use simple provenance graph statistics to aide
+We were inspired by the work proposed by Allen et. al. who use simple provenance graph statistics to aide
 in manual intrusion detection by humans. We extend their idea to make use of the typed node and typed edge
 nature of provenance graphs \cite{provstat}. For example, instead of simply counting number of edges from a node, we
 counted number of edges of type {\em input} directed towards {\em file} type nodes, or the number of {\em fork}
@@ -229,7 +229,7 @@ and this should result in similar number of inputs, outputs, number of ancestors
 process nodes of the same program.
 Intrusions typically change the number of expected inputs and outputs (e.g., a process forking a shell process
 when it normally does not), and we hypothesize that this can manifest as unusual changes in centrality
-for the offending node in the provenance graph. ??? note the following 3 observations unique to provenance graphs \cite{clustering}:
+for the offending node in the provenance graph. Macko et. al. note the following 3 observations unique to provenance graphs \cite{clustering}:
 \begin{enumerate}
 \item The ubiquity (importance) of a node is a function of a node's descendants, not its ancestors. (Note: Because edges in provenance graphs are in the direction of data dependence instead of data flow, ``descendants" in this case means ancestors in the provenance graph).
 \item There is no agreed-upon granularity in which provenance should be captured.
@@ -466,7 +466,7 @@ CS261 Program Committee for their feedback on the initial draft of this paper.
 \begin{thebibliography}{99}
 
 \bibitem{provstat}
-\textsc{Allen, D. M., Chapman, A., Seligman, L., and Blaustein, B.} In {\em Proceedings of the International Conference on Collaborative Computing: Networking, Applications and Worksharing} (October 2011).
+\textsc{Allen, D. M., Chapman, A., Seligman, L., and Blaustein, B.} Provenance for Collaboration: Detecting Suspicious Behaviors and Assessing Trust in Information. In {\em Proceedings of the International Conference on Collaborative Computing: Networking, Applications and Worksharing} (October 2011).
 
 \bibitem{darpa}
 \textsc{DARPA Intrusion Detection Evaluation Data Set, 1998.} {\tt http://www.ll.mit.edu/mission/\\communications/cyber/CSTcorpora/ideval/\\data/1998data.html}.
@@ -505,7 +505,7 @@ CS261 Program Committee for their feedback on the initial draft of this paper.
 \textsc{SunSHIELD Basic Security Module Guide.} {\tt http://docs.oracle.com/cd/\\E19455-01/806-1789/6jb25l4bc/index.html}.
 
 \bibitem{parzen}
-\textsc{Yeung, D. and Chow, C.} Parzen-window network intrusion detectors. In {\em Proceedings of 2002 International Conference on Pattern Recognition} (August 2002).
+\textsc{Yeung, D. and Chow, C.} Parzen-Window Network Intrusion Detectors. In {\em Proceedings of 2002 International Conference on Pattern Recognition} (August 2002).
 
 \end{thebibliography}
 
