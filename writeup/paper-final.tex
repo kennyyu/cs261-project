@@ -318,20 +318,6 @@ For our system administration attack, we compiled the PASS toolset using GCC, an
 
 \subsection{Selecting Provenance Statistics}
 
-Below is the list of simple provenance graph statistics we implemented:
-\begin{enumerate}
-\item number of input and output files
-\item number of input and output processes
-\item number of input and output pipes
-\item number of versions stemming from this node
-\end{enumerate}
-
-We also implemented the indegree, Opsahl, and ancestor centrality metrics.
-We chose not to implement the Provenance Eigenvector Centrality because computing
-the eigenvectors of the large matrix took too much computation time on our machines.
-We also chose not to implement age because age would make our data too dependent
-on how quickly we executed our workloads.
-
 \begin{table*}[ht]
 \label{results}
 {\small
@@ -355,11 +341,24 @@ on how quickly we executed our workloads.
 \label{tb:tablename}
 \end{table*}
 
+Below is the list of simple provenance graph statistics we implemented:
+\begin{enumerate}
+\item number of input and output files
+\item number of input and output processes
+\item number of input and output pipes
+\item number of versions stemming from this node
+\end{enumerate}
+We also implemented the indegree, Opsahl, and ancestor centrality metrics.
+We chose not to implement the Provenance Eigenvector Centrality because computing
+the eigenvectors of the large matrix took too much computation time on our machines.
+We also chose not to implement age because age would make our data too dependent
+on how quickly we executed our workloads.
+
 In Table 1, we show a summary of the statistics that had any statistical difference between normal and abnormally behaving nodes. The buffer overflows showed the most abnormal behavior in the number of outgoing processes and the centrality measures. This makes sense, as arbitrary code execution will generate additional processes. Of the centrality metrics we implemented, the Opsahl Centrality metric did the best in distinguishing an exploited node from normally behaving nodes. Because the Opsahl Centrality metric accounts for the number of edges between a node and all of its descendants, this centrality metric is very sensitive to the addition of nodes. Exploits that have additional outputs (e.g. new processes and output files through a remote shell), thus generate a higher Opsahl centrality metric for the offending node. The more active the exploit is (say, if it forks a user shell), the more the centrality measure will be impacted, and the more likely it is that the exploit will be caught by our model.
 
 If the exploit does directly not generate additional files, however, statistics like "number of output files" will fail to be statistically significant. Indeed, the two programs (hello and mcrypt) that did not generate additional files were not flagged by that measure. On the other hand, the node representing the exploited version of \texttt{gcc} had abnormal density estimates, as it generated many more files than a normal \texttt{gcc} process. 
 
-Because of this exploratory analysis, we chose to implement Opsahl centralty and Ancestory centrality and analyze its accuracy on a real intrusion detection data set.
+Because of this exploratory analysis, we chose to implement Opsahl and ancestor centrality and analyze its accuracy on a real intrusion detection data set.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % EVALUATION
@@ -369,11 +368,63 @@ Because of this exploratory analysis, we chose to implement Opsahl centralty and
 
 \subsection{Experimental Setup}
 
-talk about SPADE and building graphs from BSM
+We evaluated our approach by analyzing its accuracy on the 1998 DARPA Intrusion Detection Challenge data set (CITE).
+The data set consists of users of several weeks of network-based attacks in the midst of normal
+background data. The data includes BSM (Basic Security Model) traces (CITE), which provide an
+audit of all the system calls made within a certain time period. The data also includes a list
+of specific moments in time $T$ and whether an intrusion occurred and if so, what kind of intrusion. 
+
+For our experiments, we limited the scope of our intrusion detection system to only u2r attacks, as
+the other kinds of attacks were network-based and would not appear in the provenance data. 
+We identify each accuracy measurement with a tuple:
+$$(\mbox{centrality metric}, \psi, W)$$
+where the centrality metric is one of Opsahl, indegree, or ancestor, $\psi$ is our false detection rate for our Parzen-Window
+estimates, and $W$ is the time window that we use to form time intervals to look for anomalous nodes. We used
+the following procedure to evaluate the accuracy of our system: 
+\begin{enumerate}
+\item Use BSM traces to build provenance graphs, in a similar fashion to SPADE (CITE). 
+\item Compute the centralities of the nodes in the graph using the given centrality metric, and create a mapping from each process
+name $P$ to a list of log-likelihood values $L(y)$, where $y$ is the computer centrality measurement for each node in the graph having process name $P$.
+\item For a specific moment in time $T$, find all edges in the provenance graph we built with timestamps in the interval $[T - W, T + W]$. 
+Use the nodes attached to these edges as our {\em candidate anomaly set}. We used the specific times listed in data sets for our values of $T$.
+\item For all nodes in the candidate anomaly set, find the process name $P$ of the node, and use our Parzen-Window approach on process
+name $P$ to determine if the node is anomalous. We evaluate whether a node is normal or anomalous using the Parzen-Windows built from the graph
+containing the node.
+\item For times $T$ in the data set listed as having an intrusion, our intrusion detection system considers that time $T$ as having an intrusion
+if there are {\em sufficient} number of nodes in the $[T - W, T + W]$ window considered anomalous. A candidate anomaly set has a 
+{\em sufficient} number of anomalous nodes if TODO...
+\end{enumerate}
+
+For each $(\mbox{centrality metric}, \psi, W)$, we compute:
+\begin{itemize}
+\item {\em False Positive Rate (FPR).} Ratio of number of time intervals that do not actually contain an intrusion
+but were misidentified as having an intrusion, to the total number of time intervals.
+\item {\em True Positive Rate (TPR).} Ratio of the number of time intervals that actually do contain an intrusion
+and were correctly identified as having an intrusion, to the total number of time intervals.
+\end{itemize}
+
+We evaluated the accuracy of our system on various values of $\psi$ and $W$.
 
 \subsection{Results}
 
+TODO
+
+Need these graphs:
+[1]:
+- fix psi
+- x-axis is W (probably log-scale, as W = 10ms, 1000ms, 100000ms, 10 ** N ms)
+- y-axis is [0,1]
+- overlay true positive rate for each of the centrality metrics in different color
+
+[2]: repeat [1] but plot false positive rate instead
+
+[3-4] repeat [1-2] with a different value of psi
+
+[5-6] repeat [1-2] with another value of psi
+
 \subsection{Discussion}
+
+TODO
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -395,6 +446,7 @@ Given progressive forms of these statistics, we can modify PASS to compute Parze
 In our experiments, we looked at provenance graphs in their entirety. However, provenance graphs are meant to be long-lived, and an intrusion that affected only a small portion of the graph will have negligible effects on the global structure of the graph. To resolve this issue, a possible future extension to our work is to cluster the nodes based on time \cite{clustering} and then only examine the most ``recent" nodes when applying our histogram technique. Another approach would be to discard provenance data in computing Parzen-Window density estimates after the data have reached a certain age.
 
 \section{Conclusion}
+TODO
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % ACKNOWLEDGEMENTS
