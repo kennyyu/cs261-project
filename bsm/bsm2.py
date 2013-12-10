@@ -44,9 +44,11 @@ def parseEventToken(line):
         eventData["event_time"] = date_time + offset_msec
 
         # if event occurred after current date_time, load new ps_data
-        if int(date_time) > cur_ps_time:
+        while int(date_time) > cur_ps_time:
             print "loading new info because {} is greater than {}".format(date_time, cur_ps_time)
             loadPidInfo()
+            if len(ps_info) == 0:
+                break
     elif token_type in [36, 122, 117, 124]:
         ##user_audit_id = tokens[1]
         euid = tokens[2]
@@ -178,8 +180,11 @@ def processEvent(eventData):
     # rename
     elif event_id in [42]:
         checkCurrentProcess()
-        fromPath = eventData["path1"]
-        toPath = eventData["path2"]
+        try:
+            fromPath = eventData["path1"]
+            toPath = eventData["path2"]
+        except KeyError:
+            print eventData
 
         """
         if (!toPath.startsWith("/")):
@@ -207,6 +212,13 @@ def putFileVertex(vert):
     global file_node_map, node_counter
     vert["type"] = "file"
     vert["node_number"] = node_counter
+
+    # if vertex is already in graph, just update it
+    if vert["path"] in file_node_map:
+        for k in vert:
+            graph.node[file_node_map[vert["path"]]][k] = vert[k]
+        return
+
     file_node_map[(vert["path"])] = node_counter
     graph.add_node(node_counter)
     # add attrs
@@ -216,6 +228,14 @@ def putFileVertex(vert):
 def putProcessVertex(vert):
     global process_node_map, node_counter, graph
     vert["type"] = "process"
+
+    # if vert already in graph ,just update
+    if vert["pid"] in process_node_map:
+        # add attrs
+        for k in vert:
+            graph.node[process_node_map[vert["pid"]]][k] = vert[k]
+        return
+
     process_node_map[vert["pid"]] = node_counter
     vert["node_number"] = node_counter
 
@@ -284,6 +304,10 @@ def checkCurrentProcess():
         putProcessVertex(process)
         processVertices[pid] = process
         ppid = process["ppid"] if "ppid" in process else None
+        if ppid not in processVertices:
+            putProcessVertex({"pid": ppid})
+            processVertices[ppid] = {"pid": ppid}
+
         if ((ppid != None) and ppid in processVertices):
             triggeredEdge = WasTriggeredBy(process, processVertices.get(ppid))
             putEdge(triggeredEdge)
@@ -332,7 +356,7 @@ def load(fname):
 
 if __name__ == "__main__":
     if len(sys.argv) < 4:
-        print "Usage: python bsm.py bsmfile pself outfile"
+        print "Usage: python bsm.py raw.bsmfile prauditfile outfile"
         sys.exit()
     ps.setup(sys.argv[2])
     with open(sys.argv[1]) as f:
