@@ -1,4 +1,5 @@
 from collections import defaultdict
+from random import shuffle
 import bisect
 import networkx as nx
 import numpy as np
@@ -167,6 +168,8 @@ if __name__ == "__main__":
     bsm_rows = bsm_list.parse_bsm_list(bsmlistfile)
     u2r_rows = [row for row in bsm_rows if row["type"] == "u2r"]
     none_rows = [row for row in bsm_rows if row["type"] == "none"]
+    shuffle(none_rows)
+    none_rows = none_rows[:2*len(u2r_rows)]
 
     print "Found {} u2r, {} none".format(len(u2r_rows), len(none_rows))
 
