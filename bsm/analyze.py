@@ -1,6 +1,7 @@
 from collections import defaultdict
 import networkx as nx
 import numpy as np
+import math
 import matplotlib.pyplot as plt
 import json
 import sys
@@ -61,10 +62,10 @@ def get_values(g, functions):
 
 # gaussian taken from http://stackoverflow.com/questions/14873203/plotting-of-1-dimensional-gaussian-distribution-function
 def gaussian(x, mu, sig):
-    return np.exp(-np.power(x - mu, 2.) / 2 * np.power(sig, 2.)) * 1./(2*math.PI*sig)
+    return np.exp(-np.power(x - mu, 2.) / 2 * np.power(sig, 2.)) * 1./(2*math.pi*sig)
 def parzen_estimate(x, vals):
     std = np.std(vals)
-    return 1./len(vals) * sum(gaussian(x-val, x, std) for val in vals)
+    return 1./len(vals) * sum(gaussian(x, val, std) for val in vals)
 
 def parzen_is_expected(x, vals, psi):
     # get log liklihood of x
@@ -74,7 +75,8 @@ def parzen_is_expected(x, vals, psi):
     count_y = sum(1 if math.log(parzen_estimate(y, vals)) < ll_x else 0 for y in vals)
 
     # if this probability is greater than psi, accept
-    return float(count_y) / len(vals) > psi
+    pred = float(count_y) / len(vals)
+    return pred > psi, pred
 
 
 
@@ -99,6 +101,37 @@ if __name__ == "__main__":
     # name => function => list of values
     values = get_values(g, FUNCTIONS)
 
+    # try out an example, using opsahl and the program with the most entries
+    # just a quick example
+    max = (0, None)
+    for name in values:
+        if len(values[name]["opsahl"]) > max[0] and name != "UNKNOWN":
+            max = (len(values[name]["opsahl"]), name)
+
+    print "Evaluating {}".format(max[1])
+    vals = values[max[1]]["opsahl"]
+    print vals
+
+    results = {}
+    num_expected = 0
+    psi = 0.1
+    for v in vals:
+        # cache results
+        if v in results:
+            expected,p = results[v]
+        else:
+            expected,p = parzen_is_expected(v, vals, psi)
+            results[v] = (expected,p)
+            print "{} is {}expected (p = {})".format(v, "" if expected else "NOT ", p)
+        if expected:
+            num_expected += 1
+    print "{}/{} expected ({}%)".format(num_expected, len(vals), float(num_expected)/len(vals))
+
+
+
+
+
+    """
     # create KDEs
     kdes = {}
     for name in values:
@@ -113,6 +146,7 @@ if __name__ == "__main__":
             bw = np.abs(variance) if variance != 0 else 0.5
             kdes[name][f] = histogram.kde_make(values[name][f], bw=bw)
     print kdes
+    """
 
 
 
