@@ -119,7 +119,7 @@ and {\em remote-to-local} (r2l) intrusions (intrusions that provide unauthorized
 The main contributions of this paper are the following:
 \begin{enumerate}
 \item Discuss which provenance graph statistics we chose to use, how we chose them, and why we chose them.
-\item Analyze the Parzen-Window technique with various provenance graph statistics on a real intrusion detection data set and evaluate its performance.
+\item Analyze the Parzen-Window technique with various provenance graph statistics on a real intrusion detection data set and evaluate its accuracy.
 \item Discuss the limitations of the approach and present future work to transform the technique into an online intrusion detection system.
 \end{enumerate}
 
@@ -181,7 +181,7 @@ makes no assumptions about the forms of the PDFs, except that PDFs are smooth. B
 density estimation, one can build a probability density estimate of normal behavior by only having examples of normal
 behavior and no examples of abnormal behavior.
 
-A {\em Parzen-window} estimate of a probability density function $p(\m(x))$
+A {\em Parzen-window} estimate of a probability density function $p(\m{x})$
 based on $n$ examples in a dataset $D$ drawn from model $\mathcal{M}$ is given by:
 $$p(\m{x}) = \frac{1}{n} \sum_{i=1}^n \delta_n (\m{x} - \m{x_i})$$
 where $\delta_n(\cdot)$ is a kernel function. They chose to use radially-symmetric Gaussian kernel functions because
@@ -214,24 +214,62 @@ We vary the features we used and values of $\psi$ and evaluate its performance o
 
 \subsection{Provenance Graph Features}
 
-how we choose features to look at
-- basic statistics for manual detection
-- graph centrality and clustering can help us identify the different kinds of tasks running
-- use these metrics for kernel estimation and 
-- cite machine learning 
+We were inspired by the work proposed by ??? who use simple provenance graph statistics to aide
+in manual intrusion detection by humans. We extend their idea to make use of the typed node and typed edge
+nature of provenance graphs. (CITE) For example, instead of simply counting number of edges from a node, we
+counted number of edges of type {\em input} directed towards {\em file} type nodes, or the number of {\em fork}
+edges from {\em process} type nodes. Below is the list of simple provenance graph statistics we used:
+\begin{enumerate}
+\item number of input and output files
+\item number of input and output processes
+\item number of input and output pipes
+\item number of versions stemming from this node
+\end{enumerate}
 
+Furthermore, we hypothesize that intrusions manifest as anomalies in the lineage of digital artifacts, and
+one way of observing this is through {\em graph centrality metrics}. A {\em graph centrality metric} is a function
+of a node and its containing graph, and intuitively represents how {\em central} or {\em important} the node
+is in the graph. In terms of provenance graphs, processes of the same program typically behave similarly to one another
+and this should result in similar number of inputs, outputs, number of ancestors, and number of descendants for normal
+process nodes of the same program.
+Intrusions typically change the number of expected inputs and outputs (e.g., a process forking a shell process
+when it normally does not), and we hypothesize that this can manifest as unusual changes in centrality
+for the offending node in the provenance graph. ??? note the following 3 observations unique to provenance graphs (CITE):
+\begin{enumerate}
+\item The ubiquity (importance) of a node is a function of a node's descendants, not its ancestors. (Note: Because edges in provenance graphs are in the direction of data dependence instead of data flow, ``descendants" in this case means ancestors in the provenance graph).
+\item There is no agreed-upon granularity in which provenance should be captured.
+\item Provenance has a temporal component.
+\end{enumerate}
+
+Using these observations, they propose several centrality metrics on provenance graphs:
+\begin{itemize}
+\item \textbf{In-degree Centrality}. Because a node's importance is based on its output descendants, then the number of times a node was used as input to another node indicates a simple measure of importance.
+\item \textbf{Age}. They note that large "jumps" in timestamps or age might indicate breaks between tasks, but this interpretation is complicated when scripts execute tasks in short succession.
+\item \textbf{Ancestor Centrality}. This measures the total number of descendants of a node, normalized by the total number of nodes in a graph.
+\item \textbf{Opsahl's Closeness Centrality}. This accounts for the number of edges between a node and its descendants. To compute this, we calculate
+$$CC'(v) = \sum_{x \in V -  \{v\}} (d'_{xv})^{-1}$$
+where $V$ is the set of nodes in the graph, $d'_{xv}$ is the distance from node $x$ to $v$ by only following outgoing edges from $x$. Unreachable nodes from $x$ will have $d'_{xv} = \infty$, and so $(d'_{xv})^{-1} = 0$.
+\item \textbf{Provenance Eigenvector Centrality}. The centrality of the nodes is given by the left dominant eigenvector of the matrix:
+$$M_{ij} =
+\begin{cases}
+1 & \text{if there is an edge } i \to j \\
+1/|V| & \text{if there is no out edge from } i \\
+0 & \text{otherwise}
+\end{cases}
+$$
+\end{itemize}
+We implemented some of these graph centrality metrics and used Parzen-Windows on centrality measurements to compute density estimates for each process.
 
 \subsection{Intrusion Types}
 
-
-use provenance to automatically detect intrusions
-- existing machine learning techniques on KDD data set: use features of an intrusion (number of data)
-- but not actually using graph structure
-  
-  we limit our work to these intrusions
-- explain various kinds
-- why just user 2 local
-
+The DARPA Intrusion Detection Data Sets (CITE) describe various kinds of intrusions in a network, including:
+\begin{enumerate}
+\item {\bf Denial of Service (dos)}. Intrusion that results in denial of service, e.g., overwhelming a server.
+\item {\bf Remote to Local (r2l)}. Unauthorized access from a machine, e.g., guessing passwords.
+\item {\bf User to Root (u2l)}. Unauthorized access to local superuser (root) privileges, e.g., various buffer overflow attacks.
+\item {\bf Probing (probe)}. Surveillance and scanning, e.g. port scanning.
+\end{enumerate}
+Because we only collect provenance graphs local to the machine, we chose to limit our intrusion detection system only to u2l intrusions within this paper, as the other types of attacks involve exploiting the network and would not appear in provenance data.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
