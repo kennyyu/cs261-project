@@ -25,11 +25,13 @@ def edge_counts(g):
     """
     return {}
 
-def centrality_values(g):
-    # functions to run on the graph (and aggregate results by node type)
-    functions = {
-            "opsahl": histogram.centrality_opsahl
-            }
+# functions to run on the graph (and aggregate results by node type)
+FUNCTIONS = {
+        "opsahl": histogram.centrality_opsahl,
+        "indegree": histogram.centrality_in_degree,
+        "ancestor": histogram.centrality_ancestor
+        }
+def get_values(g, functions):
     metrics = {}
 
     # go through each metric
@@ -49,11 +51,11 @@ def centrality_values(g):
 
                 # add this particular value to the metrics dict
                 metrics[cmd][f].append(values[node_num])
-        return metrics
+    return metrics
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print "Usage: python kenny.py json-file"
+        print "Usage: python analyze.py json-file"
         sys.exit()
 
     datafile = sys.argv[1]
@@ -68,7 +70,22 @@ if __name__ == "__main__":
             if not "cmd" in node:
                 node["cmd"] = "UNKNOWN"
 
-    print centrality_values(g)
+    # get values
+    # name => function => list of values
+    values = get_values(g, FUNCTIONS)
+
+    # create KDEs
+    kdes = {}
+    for name in values:
+        kdes[name] = {}
+
+    # iterate over names
+    for name in values:
+        # iterate over functions
+        for f in values[name]:
+            kdes[name][f] = histogram.kde_make(values[name][f])
+    print kdes
+
 
 
 

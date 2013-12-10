@@ -7,61 +7,12 @@ NAMING CONVENTION
 start node type, direction, edge type, other node's type
 """
 
-SHOULD_HARDCODE_GCC = True
-
-def file_out_file(dg, nodes=None):
-    return count_edge_types(dg, nodes=nodes, dir='out', nodetype='FILE', edgetype='INPUT', nodetype2='FILE')
-
-def file_in_file(dg, nodes=None):
-    return count_edge_types(dg, nodes=nodes, dir='in', nodetype='FILE', edgetype='INPUT', nodetype2='FILE')
-
-def file_out_proc(dg, nodes=None):
-    return count_edge_types(dg, nodes=nodes, dir='out', nodetype='FILE', edgetype='INPUT', nodetype2='PROC')
-
-def file_in_proc(dg, nodes=None):
-    return count_edge_types(dg, nodes=nodes, dir='in', nodetype='FILE', edgetype='INPUT', nodetype2='PROC')
-
-def proc_out_file(dg, nodes=None):
-    return count_edge_types(dg, nodes=nodes, dir='out', nodetype='PROC', edgetype='INPUT', nodetype2='FILE')
-
-def proc_in_file(dg, nodes=None):
-    return count_edge_types(dg, nodes=nodes, dir='in', nodetype='PROC', edgetype='INPUT', nodetype2='FILE')
-
-def proc_out_proc(dg, nodes=None):
-    return count_edge_types(dg, nodes=nodes, dir='out', nodetype='PROC', edgetype='FORKPARENT', nodetype2='PROC')
-
-def proc_in_proc(dg, nodes=None):
-    return count_edge_types(dg, nodes=nodes, dir='in', nodetype='PROC', edgetype='FORKPARENT', nodetype2='PROC')
-
-def proc_in_version(dg, nodes=None):
-    return count_edge_types(dg, nodes=nodes, dir='in', nodetype='PROC', edgetype='VERSION', nodetype2='PROC')
-
-def proc_out_version(dg, nodes=None):
-    return count_edge_types(dg, nodes=nodes, dir='out', nodetype='PROC', edgetype='VERSION', nodetype2='PROC')
-
-def file_in_version(dg, nodes=None):
-    return count_edge_types(dg, nodes=nodes, dir='in', nodetype='FILE', edgetype='VERSION', nodetype2='FILE')
-
-def file_out_version(dg, nodes=None):
-    return count_edge_types(dg, nodes=nodes, dir='out', nodetype='FILE', edgetype='VERSION', nodetype2='FILE')
-
-def pipe_out_proc(dg, nodes=None):
-    return count_edge_types(dg, nodes=nodes, dir='out', nodetype='PIPE', edgetype='INPUT', nodetype2='PROC')
-
-def pipe_in_proc(dg, nodes=None):
-    return count_edge_types(dg, nodes=nodes, dir='in', nodetype='PIPE', edgetype='INPUT', nodetype2='PROC')
-
-def proc_out_pipe(dg, nodes=None):
-    return count_edge_types(dg, nodes=nodes, dir='out', nodetype='PROC', edgetype='INPUT', nodetype2='PIPE')
-
-def proc_in_pipe(dg, nodes=None):
-    return count_edge_types(dg, nodes=nodes, dir='in', nodetype='PROC', edgetype='INPUT', nodetype2='PIPE')
 
 def get_name(dg, node):
-    if "NAME" not in dg.node[node]:
-        return "PIPE-" + str(node)
+    if "cmd" not in dg.node[node]:
+        return "UNKNOWN"
     else:
-        return dg.node[node]["NAME"]
+        return dg.node[node]["cmd"]
 
 def count_edge_types(dg, dir, nodetype, edgetype, nodetype2, nodes=None):
     """
@@ -98,33 +49,14 @@ def count_edge_types(dg, dir, nodetype, edgetype, nodetype2, nodes=None):
         d[name].append(count)
     return d
 
-def kde_make(counts):
+def kde_make(counts,bw=0.5):
     #TODO use tophat kernel?
-    kde = KernelDensity(bandwidth=0.5, kernel='gaussian')
+    kde = KernelDensity(bandwidth=bw, kernel='gaussian')
     kde = kde.fit(np.vstack(counts))
     return kde
 
 def kde_predict(kde, val):
     return np.exp(kde.score(val))
-
-functions = {
-    'file_out_file': file_out_file,
-    'file_in_file': file_in_file,
-    'file_out_proc': file_out_proc,
-    'file_in_proc': file_in_proc,
-    'file_out_version': file_out_version,
-    'file_in_version': file_in_version,
-    'proc_out_file': proc_out_file,
-    'proc_in_file': proc_in_file,
-    'proc_out_proc': proc_out_proc,
-    'proc_in_proc': proc_in_proc,
-    'proc_out_version': proc_out_version,
-    'proc_in_version': proc_in_version,
-    'proc_out_pipe': proc_out_pipe,
-    'proc_in_pipe': proc_in_pipe,
-    'pipe_out_proc': pipe_out_proc,
-    'pipe_in_proc': pipe_in_proc,
-}
 
 def get_vals(dg, node):
     """
@@ -141,7 +73,7 @@ def get_vals(dg, node):
             d[k] = 0
     return d
 
-def make_kdes(dg):
+def make_kdes(dg, bw=0.5):
     """
     returns a dictionary
 
@@ -158,7 +90,7 @@ def make_kdes(dg):
     for k in functions:
         for (name, counts) in functions[k](dg).items():
             try:
-                d[name][k] = kde_make(counts), counts
+                d[name][k] = kde_make(counts,bw), counts
             except:
                 d[name][k] = None
     return d
