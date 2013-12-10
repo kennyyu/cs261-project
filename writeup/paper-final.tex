@@ -51,8 +51,11 @@
 %
 
 \begin{abstract}
-Provenance is data that describes how a digital artifact came to be in its current state. We hypothesize
-that intrusions on a system leave behind anomalies in the lineage of digital artifacts.
+Security rests on being able to identify potentially malicious behavior.
+One way to identify malicious behavior is to compare system behavior to known normal behavior.
+Intrusions on a system leave typically leave behind digital artifacts, and we hypothesize
+that we can detect intrusions on a system by identifying anomalies the artifacts' provenance, the lineage of how
+the artifact came to be in its present state.
 We present an intrusion detection approach to find these anomalies by analyzing centrality metrics
 on provenance graphs. We use a Parzen-Window approach \cite{parzen} on various provenance graph centrality metrics \cite{clustering}
 to determine probability density estimates of normal behavior, and we use these density estimates to 
@@ -88,7 +91,8 @@ typed nodes and typed edges.
 Nodes typically include processes and files, and edges are directed from nodes to their dependencies. For example,
 process nodes have edges directed towards input file nodes and to the parent process's node, and
 file nodes have edges directed towards previous versions of the file and to the nodes of the
-processes that modified the file.
+processes that modified the file. See Figure \ref{graph-simple} for an illustration of these provenance
+graph node and edge types.
 
 Existing intrusion detection systems (IDS) use provenance data only to a limited extent.
 Allen et. al. analyze
@@ -101,8 +105,12 @@ determined an intrusion has occurred, the system follows the causality graph bac
 then it follows the causality graph forwards to determine all the objects tainted by the attack. However, the authors 
 do not present a way of using provenance data to automatically detect intrusions.
 
-
->>> TODO INSERT PROVENANCE GRAPH SMALL EXAMPLE HERE SHOWING DATA FLOW
+\begin{figure}
+  \label{graph-simple}
+  \centering
+    \includegraphics[width=0.5\textwidth]{img/graph-simple.png}
+    \caption{Example of a provenance graph, showing the types of nodes and edges common in provenance graphs} 
+\end{figure}
 
 In this paper, we present an approach to use provenance data to automatically detect intrusions. Intrusion
 detection can be framed as a {\em novelty detection} problem, in which one attempts to decide whether
@@ -123,7 +131,7 @@ The main contributions of this paper are the following:
 \item Discuss the limitations of the approach and present future work to transform the technique into an online intrusion detection system.
 \end{enumerate}
 
-POSSIBLY INCLUDE THIS
+POSSIBLY INCLUDE THIS TODO
 * the papers suck at finding u2r
 * because they don't look at provenance graph structure
 * we can do better?
@@ -272,6 +280,12 @@ Because we only collect provenance graphs local to the machine, we chose to limi
 %
 
 \section{Design and Implementation}
+
+We envision a provenance aware system which constantly builds normal profiles of processes. Simultaneously,
+the system looks for instances of deviation from normal behavior and handles them appropriately
+(e.g., terminating the process, slowing down the process). In our work, we derive normal profiles of process behavior
+from provenance graphs, and we use a Parzen-Window model on various provenance graph statistics
+to determine if anomalous nodes appear in the graph.
 
 \subsection{Preliminary Provenance Exploration}
 
@@ -427,6 +441,10 @@ Need these graphs:
 
 TODO
 
+\subsection{Limitations}
+
+TODO
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CONCLUSION
@@ -444,7 +462,9 @@ Currently, this system runs after-the-fact, but truly useful intrusion detection
 
 Given progressive forms of these statistics, we can modify PASS to compute Parzen-Window density estimates as it generates provenance, or we can audit system calls like SPADE \cite{spade} to build provenance graphs in user space and apply our Parzen-Window technique.
 \subsection{Local vs. Global}
-In our experiments, we looked at provenance graphs in their entirety. However, provenance graphs are meant to be long-lived, and an intrusion that affected only a small portion of the graph will have negligible effects on the global structure of the graph. To resolve this issue, a possible future extension to our work is to cluster the nodes based on time \cite{clustering} and then only examine the most ``recent" nodes when applying our histogram technique. Another approach would be to discard provenance data in computing Parzen-Window density estimates after the data have reached a certain age.
+In our experiments, we looked at provenance graphs in their entirety. However, provenance graphs are meant to be long-lived, and an intrusion that affected only a small portion of the graph will have negligible effects on the global structure of the graph. To resolve this issue, a possible future extension to our work is to cluster the nodes based on time \cite{clustering} and then only examine the most ``recent" nodes when applying our histogram technique. Another approach would be to discard provenance data in computing Parzen-Window density estimates after the data have reached a certain age. By allowing the model to evolve over time, the system
+can combat an {\em autoimmune disorders} in which attackers purposely invoke programs in weird ways to fool the system into thinking the programs are
+behaving abnormally.
 
 \section{Conclusion}
 TODO
