@@ -218,13 +218,7 @@ We were inspired by the work proposed by ??? who use simple provenance graph sta
 in manual intrusion detection by humans. We extend their idea to make use of the typed node and typed edge
 nature of provenance graphs. (CITE) For example, instead of simply counting number of edges from a node, we
 counted number of edges of type {\em input} directed towards {\em file} type nodes, or the number of {\em fork}
-edges from {\em process} type nodes. Below is the list of simple provenance graph statistics we used:
-\begin{enumerate}
-\item number of input and output files
-\item number of input and output processes
-\item number of input and output pipes
-\item number of versions stemming from this node
-\end{enumerate}
+edges from {\em process} type nodes.
 
 Furthermore, we hypothesize that intrusions manifest as anomalies in the lineage of digital artifacts, and
 one way of observing this is through {\em graph centrality metrics}. A {\em graph centrality metric} is a function
@@ -278,11 +272,68 @@ Because we only collect provenance graphs local to the machine, we chose to limi
 
 \section{Design and Implementation}
 
-\subsection{Selecting Metrics}
+\subsection{Preliminary Provenance Exploration}
 
-talk about PASS and SPADE here.
+To determine which provenance statistics seem useful, we first created simple simulated intrusions
+and ran them in a Provenance Aware Storage System (PASS) (CITE), a file system with
+a mounted volume that automatically collects provenance of all files within that volume.
+To make data collection easier, we used PASSv2, which provides an Ubuntu virtual machine with
+the PASS volume already installed.
 
-put that table here
+For each of our intrusions, we ran it normally multiple times and collected the provenance. We then ran the
+intrusion with the exploit multiple times and collected the new provenance.
+
+We used the following procedure to implement our Parzen-Window density estimates and
+intrusion/normal decision.
+\begin{enumerate}
+\item For each statistic that we implemented, we computed the counts for that statistic for all the
+nodes in the provenance graph containing the normally-behaving workload.
+\item We aggregated the counts by the name of the process (the path to the executable). For a given process $P$, denote the
+set of counts for that process name as $D_P$.
+\item For each $y \in D_P$, calculate the log-likelihood $L_P(y)$.
+\item For a test node with process name $P$ in the exploited-workload provenance graph, we calculate the value $x$ of the statistic in its graph, and then compute $L_P(x)$. 
+If the ratio of the number of nodes $y$ with $L_P(y) \leq L_P(x)$,
+to the total number of nodes in $D_P$ is greater than the false detection rate $\psi$, we label the node as normal. Otherwise we label the node as
+an intrusion.
+\end{enumerate}
+
+In the exploited workloads, we used Orbiter (CITE) to find the abnormally behaving node by hand, and we used these nodes as our test nodes.
+
+\subsection{Simulated Intrusions}
+
+Below is a list of the intrusions we simulated.
+
+\subsubsection{hello}
+We found that many of the popular exploits involved buffer overflows and arbitrary code execution and possibly obtain root access. We created a simple \texttt{hello} program that echos standard in to standard out, and we gave it a buffer overflow vulnerability that allows a malicious user to fork a shell.
+
+We ran \texttt{hello} normally 40 times on various inputs and collected the provenance times. We then exploited the buffer overflow vulnerability in \texttt{hello} to spawn an \texttt{ls} process, and saved the standard out of that process to a file.
+
+\subsubsection{mcrypt}
+The mcrypt encryption package had a long standing buffer overflow, which would allow a malicious user to run their own code when mcrypt tried to decrypt the crafted exploit file. Due to limitations in our Virtual Machine set up, we were unable to exploit the vulnerable version of mcrypt, much like the authors of Backtracker \cite{backtracker} found. To emulate this exploit, we designed a Python program, which would decrypt (via ROT13) an input file. When sent a particular exploit file which contained malicious lines, our program would stop decrypting and start running the code specified in the file.
+
+We ran our program on over 200 good inputs, and stored the provenance data. We then ran our program on two bad inputs, first to call \texttt{ls} as a Proof of Concept, and again to call \texttt{/bin/sh} to demonstrate that more severe attacks can be performed. We again exported the provenance generated from this exploited workload.
+
+\subsubsection{gcc}
+Another type of exploit is more reminiscent of a system administration failure. By unexpectedly aliasing an important command, a user can unknowingly grant root access to a malicious program. To emulate this sort of attack, we replaced \texttt{/usr/bin/gcc} with our own version of gcc, which, in addition to compiling the user's code (via a call to gcc), logs that the user has made a request and copies the files the user had tried to compile. 
+
+For our system administration attack, we compiled the PASS toolset using GCC, and exported the provenance from these runs. We then replaced GCC with our exploited version, compiled the toolset several times with different configurations, and exported the provenance again.
+
+\subsection{Selecting Provenance Statistics}
+
+Below is the list of simple provenance graph statistics we implemented:
+\begin{enumerate}
+\item number of input and output files
+\item number of input and output processes
+\item number of input and output pipes
+\item number of versions stemming from this node
+\end{enumerate}
+
+We also implemented the indegree, Opsahl, and ancestor centrality metrics.
+We chose not to implement the Provenance Eigenvector Centrality because computing
+the eigenvectors of the large matrix took too much computation time on our machines.
+
+USE FIRST PAPER's RESULTS HERE to describe which metrics we should use.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % EVALUATION
@@ -291,6 +342,8 @@ put that table here
 \section{Evaluation}
 
 \subsection{Experimental Setup}
+
+talk about SPADE
 
 \subsection{Results}
 
@@ -310,6 +363,9 @@ put that table here
 %
 
 \section{Acknowledgements}
+We want to thank Margo Seltzer and Daniel Margo for their guidance on the direction of the project and for
+their help in working with PASS and analyzing provenance graphs. We also want to thank the
+CS261 Program Committee for their feedback on the initial draft of this paper.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
