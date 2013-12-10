@@ -155,6 +155,13 @@ if __name__ == "__main__":
     g = bsm.load(datafile)
 
     print "Num nodes: {}, num edges: {}".format(len(g.nodes()), len(g.edges()))
+    for n in g.nodes():
+        inedges = g.in_edges(n)
+        outedges = g.out_edges(n)
+        node = g.node[n]
+        num_edges = len(inedges) + len(outedges)
+        if num_edges == 0:
+            g.remove_node(n)
 
     print "Parsing bsm list..."
     bsm_rows = bsm_list.parse_bsm_list(bsmlistfile)
